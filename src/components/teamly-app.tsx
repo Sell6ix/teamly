@@ -126,8 +126,7 @@ export function TeamlyApp() {
     }
   }
 
-  function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  function startSearch() {
     if (!selectedHours.length) {
       toast.error("Отметьте, когда вы обычно онлайн.");
       return;
@@ -232,7 +231,7 @@ export function TeamlyApp() {
           </div>
 
           {step === "criteria" ? (
-            <form onSubmit={onSubmit} className="space-y-5">
+            <div className="space-y-5">
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                   Соберите пати под ваш ритм
@@ -381,8 +380,13 @@ export function TeamlyApp() {
                 Показать состояние ошибки поиска
               </label>
 
-              <div className="sticky bottom-3 z-10 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button type="submit" size="lg" className="h-11 w-full sm:w-auto">
+              <div className="flex flex-col gap-2 border-t border-white/8 pt-4 sm:flex-row sm:items-center">
+                <Button
+                  type="button"
+                  size="lg"
+                  className="h-11 w-full sm:w-auto"
+                  onClick={startSearch}
+                >
                   <Search data-icon="inline-start" />
                   Найти игроков
                 </Button>
@@ -390,7 +394,7 @@ export function TeamlyApp() {
                   Подбор идёт по игре, стилю, уровню (±2) и пересечению часов.
                 </p>
               </div>
-            </form>
+            </div>
           ) : (
             <ResultsView
               loading={loading}
