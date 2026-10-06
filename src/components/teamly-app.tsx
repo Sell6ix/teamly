@@ -105,6 +105,7 @@ export function TeamlyApp() {
     setError(null);
     setResult(null);
     setLastCriteria(criteria);
+    toast.dismiss();
     try {
       const response = await fetch("/api/match", {
         method: "POST",
@@ -157,7 +158,7 @@ export function TeamlyApp() {
     const next = [...seats];
     next[emptyIndex] = { kind: "player", player };
     setSeats(next);
-    toast.success(`${player.name} в пати`);
+    toast.success(`${player.name} в пати`, { duration: 1800 });
   }
 
   function kick(playerId: string) {
@@ -251,6 +252,7 @@ export function TeamlyApp() {
                       <button
                         key={item.id}
                         type="button"
+                        data-testid={`game-${item.id}`}
                         onClick={() => {
                           setGameId(item.id);
                           if (!item.partySizes.includes(partySize)) {
@@ -286,6 +288,7 @@ export function TeamlyApp() {
                       <button
                         key={style}
                         type="button"
+                        data-testid={`style-${style}`}
                         onClick={() => setPlayStyle(style)}
                         className={`rounded-xl border px-3 py-3 text-left transition ${
                           selected
@@ -355,6 +358,7 @@ export function TeamlyApp() {
                       >
                         <Checkbox
                           checked={checked}
+                          data-testid={`hour-${hour}`}
                           onCheckedChange={(value) => {
                             const on = value === true;
                             setSelectedHours((current) =>
@@ -375,6 +379,7 @@ export function TeamlyApp() {
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Checkbox
                   checked={forceError}
+                  data-testid="force-error"
                   onCheckedChange={(value) => setForceError(value === true)}
                 />
                 Показать состояние ошибки поиска
@@ -385,6 +390,7 @@ export function TeamlyApp() {
                   type="button"
                   size="lg"
                   className="h-11 w-full sm:w-auto"
+                  data-testid="search-button"
                   onClick={startSearch}
                 >
                   <Search data-icon="inline-start" />
@@ -507,7 +513,7 @@ function ResultsView({
             </p>
           ) : null}
         </div>
-        <Button type="button" variant="outline" size="lg" onClick={onBack}>
+                <Button type="button" variant="outline" size="lg" onClick={onBack} data-testid="back-criteria">
           Изменить критерии
         </Button>
       </div>
@@ -685,8 +691,14 @@ function PlayerCard({
           )}
         </ul>
       </CardContent>
-      <CardFooter>
-        <Button type="button" size="lg" disabled={disabled || invited} onClick={onInvite}>
+      <CardFooter className="pb-4">
+        <Button
+          type="button"
+          size="lg"
+          data-testid="invite-button"
+          disabled={disabled || invited}
+          onClick={onInvite}
+        >
           <UserPlus data-icon="inline-start" />
           {invited ? "Уже в пати" : "Пригласить"}
         </Button>
@@ -733,8 +745,8 @@ function PartyCard({
           ))}
         </div>
       </CardContent>
-      <CardFooter>
-        <Button type="button" size="lg" disabled={joined} onClick={onJoin}>
+      <CardFooter className="pb-4">
+        <Button type="button" size="lg" data-testid="join-party" disabled={joined} onClick={onJoin}>
           <Sparkles data-icon="inline-start" />
           {joined ? "Вы уже внутри" : "Вступить"}
         </Button>
@@ -764,6 +776,7 @@ function PartyDock({
 }) {
   const filled = seats.filter((seat) => seat.kind !== "empty").length;
   const full = filled === seats.length;
+  const canConfirm = filled >= 2;
 
   return (
     <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-80">
@@ -828,7 +841,13 @@ function PartyDock({
               Выйти из сбора
             </Button>
           ) : null}
-          <Button type="button" size="lg" disabled={!full || ready} onClick={onReady}>
+          <Button
+            type="button"
+            size="lg"
+            data-testid="confirm-party"
+            disabled={!canConfirm || ready}
+            onClick={onReady}
+          >
             {ready ? (
               <>
                 <PartyPopper data-icon="inline-start" />
@@ -836,6 +855,8 @@ function PartyDock({
               </>
             ) : full ? (
               "Подтвердить состав"
+            ) : canConfirm ? (
+              `Собраться ${filled} из ${seats.length}`
             ) : (
               `Нужно ещё ${seats.length - filled}`
             )}
