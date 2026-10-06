@@ -1,0 +1,88 @@
+export const PLAY_STYLES = [
+  "casual",
+  "ranked",
+  "learning",
+  "voice",
+  "speedrun",
+] as const;
+
+export type PlayStyle = (typeof PLAY_STYLES)[number];
+
+export const HOURS = ["morning", "day", "evening", "night"] as const;
+export type HourWindow = (typeof HOURS)[number];
+
+export const SKILL_LEVELS = [1, 2, 3, 4, 5] as const;
+export type SkillLevel = (typeof SKILL_LEVELS)[number];
+
+export type GameId =
+  | "valorant"
+  | "dota2"
+  | "cs2"
+  | "apex"
+  | "helldivers2"
+  | "drg"
+  | "lol"
+  | "dbd"
+  | "it-takes-two";
+
+export type Game = {
+  id: GameId;
+  name: string;
+  genre: string;
+  accent: string;
+  partySizes: number[];
+};
+
+export type Player = {
+  id: string;
+  name: string;
+  gameId: GameId;
+  playStyles: PlayStyle[];
+  skill: SkillLevel;
+  hours: HourWindow[];
+  lookingForSize: number;
+  role: string;
+  mic: boolean;
+  online: boolean;
+  bio: string;
+  timezone: string;
+};
+
+export type OpenParty = {
+  id: string;
+  name: string;
+  gameId: GameId;
+  playStyle: PlayStyle;
+  partySize: number;
+  filled: number;
+  skill: SkillLevel;
+  hours: HourWindow[];
+  leader: string;
+  note: string;
+  micRequired: boolean;
+};
+
+export type MatchCriteria = {
+  gameId: GameId;
+  playStyle: PlayStyle;
+  partySize: number;
+  skill: SkillLevel;
+  hours: HourWindow[];
+};
+
+export type PlayerMatch = {
+  player: Player;
+  score: number;
+  reasons: string[];
+};
+
+export type PartyMatch = {
+  party: OpenParty;
+  score: number;
+  reasons: string[];
+};
+
+export type MatchResult = {
+  players: PlayerMatch[];
+  parties: PartyMatch[];
+};
