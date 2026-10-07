@@ -1,3 +1,9 @@
+import {
+  roleFacetLabelEn,
+  roleLabelEn,
+  skillLabelEn,
+} from "@/lib/i18n/game-fields-en";
+import type { Locale } from "@/lib/i18n/messages";
 import type { GameId, PlayStyle, Player, SkillLevel } from "./types";
 
 export type RoleOption = {
@@ -417,7 +423,12 @@ export const gameFields: Record<GameId, GameFields> = {
   },
 };
 
-export function skillLabelFor(gameId: GameId, skill: SkillLevel): string {
+export function skillLabelFor(
+  gameId: GameId,
+  skill: SkillLevel,
+  locale: Locale = "ru",
+): string {
+  if (locale === "en") return skillLabelEn(gameId, skill);
   return gameFields[gameId].skillLabels[skill];
 }
 
@@ -425,13 +436,25 @@ export function playStylesFor(gameId: GameId): PlayStyle[] {
   return gameFields[gameId].playStyles;
 }
 
-export function roleFacetFor(gameId: GameId) {
-  return gameFields[gameId].roleFacet;
+export function roleFacetFor(gameId: GameId, locale: Locale = "ru") {
+  const facet = gameFields[gameId].roleFacet;
+  if (!facet || locale !== "en") return facet;
+  return {
+    label: roleFacetLabelEn[facet.label] ?? facet.label,
+    options: facet.options.map((opt) => ({
+      ...opt,
+      label: roleLabelEn[opt.id] ?? opt.label,
+    })),
+  };
 }
 
-export function roleOptionLabel(gameId: GameId, tagId: string | null | undefined): string | null {
+export function roleOptionLabel(
+  gameId: GameId,
+  tagId: string | null | undefined,
+  locale: Locale = "ru",
+): string | null {
   if (!tagId) return null;
-  return roleFacetFor(gameId)?.options.find((opt) => opt.id === tagId)?.label ?? null;
+  return roleFacetFor(gameId, locale)?.options.find((opt) => opt.id === tagId)?.label ?? null;
 }
 
 export function playerHasRoleTag(player: Player, tagId: string): boolean {

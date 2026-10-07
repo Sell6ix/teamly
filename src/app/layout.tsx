@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${onest.variable} ${unbounded.variable} dark h-full antialiased`}
+      className={`${onest.variable} ${unbounded.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col font-sans">

@@ -49,6 +49,42 @@
 }
 
 :root {
+  --brand: #e85d2c;
+  --background: #f3efe6;
+  --foreground: #1a1714;
+  --card: #fffaf2;
+  --card-foreground: #1a1714;
+  --popover: #fffaf2;
+  --popover-foreground: #1a1714;
+  --primary: #e85d2c;
+  --primary-foreground: #fff8f3;
+  --secondary: #ebe4d8;
+  --secondary-foreground: #1a1714;
+  --muted: #e7e0d4;
+  --muted-foreground: #5c564c;
+  --accent: #e0d8ca;
+  --accent-foreground: #1a1714;
+  --destructive: oklch(0.55 0.2 25);
+  --border: rgb(26 23 20 / 12%);
+  --input: rgb(26 23 20 / 14%);
+  --ring: #e85d2c;
+  --chart-1: #e85d2c;
+  --chart-2: #2a7ab8;
+  --chart-3: #b8893a;
+  --chart-4: #3d8f72;
+  --chart-5: #1a1714;
+  --radius: 0.7rem;
+  --sidebar: #fffaf2;
+  --sidebar-foreground: #1a1714;
+  --sidebar-primary: #e85d2c;
+  --sidebar-primary-foreground: #fff8f3;
+  --sidebar-accent: #ebe4d8;
+  --sidebar-accent-foreground: #1a1714;
+  --sidebar-border: rgb(26 23 20 / 12%);
+  --sidebar-ring: #e85d2c;
+}
+
+.dark {
   --brand: #ff6b3d;
   --background: #0b0b0d;
   --foreground: #f4f1ea;
@@ -73,7 +109,6 @@
   --chart-3: #e8c47c;
   --chart-4: #7dcfb6;
   --chart-5: #f4f1ea;
-  --radius: 0.7rem;
   --sidebar: #121214;
   --sidebar-foreground: #f4f1ea;
   --sidebar-primary: #ff6b3d;
@@ -84,27 +119,6 @@
   --sidebar-ring: #ff6b3d;
 }
 
-.dark {
-  --background: #0b0b0d;
-  --foreground: #f4f1ea;
-  --card: #141416;
-  --card-foreground: #f4f1ea;
-  --popover: #141416;
-  --popover-foreground: #f4f1ea;
-  --primary: #ff6b3d;
-  --primary-foreground: #1a0f0a;
-  --secondary: #1c1c20;
-  --secondary-foreground: #f4f1ea;
-  --muted: #1a1a1e;
-  --muted-foreground: #a9a59c;
-  --accent: #222226;
-  --accent-foreground: #f4f1ea;
-  --destructive: oklch(0.65 0.2 25);
-  --border: rgb(255 255 255 / 10%);
-  --input: rgb(255 255 255 / 12%);
-  --ring: #ff6b3d;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -112,10 +126,16 @@
   body {
     @apply bg-background text-foreground;
     background-image:
+      radial-gradient(900px 420px at 8% -8%, rgba(232, 93, 44, 0.12), transparent 60%),
+      radial-gradient(700px 360px at 100% 0%, rgba(42, 122, 184, 0.08), transparent 55%),
+      linear-gradient(180deg, var(--background) 0%, color-mix(in oklab, var(--background), black 4%) 100%);
+    background-attachment: fixed;
+  }
+  html.dark body {
+    background-image:
       radial-gradient(900px 420px at 8% -8%, rgba(255, 107, 61, 0.14), transparent 60%),
       radial-gradient(700px 360px at 100% 0%, rgba(61, 184, 255, 0.08), transparent 55%),
       linear-gradient(180deg, #0b0b0d 0%, #101014 100%);
-    background-attachment: fixed;
   }
   html {
     @apply font-sans;

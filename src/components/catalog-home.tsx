@@ -4,13 +4,15 @@ import { CoverImage } from "@/components/cover-image";
 import { SiteChrome } from "@/components/site-chrome";
 import { catalogGames } from "@/lib/catalog";
 import { catalogHref, parseCatalogSearchParams } from "@/lib/catalog-url";
-import { GAME_TYPES, gameTypeLabel } from "@/lib/game-types";
+import { GAME_TYPES } from "@/lib/game-types";
+import { useT } from "@/lib/i18n/context";
 import type { GameType } from "@/lib/types";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export function CatalogHome() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const filters = useMemo(
@@ -70,11 +72,12 @@ export function CatalogHome() {
 
   const filtered = games.filter((game) => {
     const q = queryDraft.trim().toLowerCase();
+    const typeLabel = t(`type.${game.type}`).toLowerCase();
     const matchesQuery =
       !q ||
       game.name.toLowerCase().includes(q) ||
       game.genre.toLowerCase().includes(q) ||
-      gameTypeLabel[game.type].toLowerCase().includes(q);
+      typeLabel.includes(q);
     const matchesType = filters.type === "all" || game.type === filters.type;
     return matchesQuery && matchesType;
   });
@@ -83,11 +86,11 @@ export function CatalogHome() {
     <SiteChrome>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-10 sm:px-6">
         <section className="relative mb-10 max-w-3xl animate-fade-up">
-          <p className="font-display text-5xl tracking-tight text-white sm:text-6xl md:text-7xl">
+          <p className="font-display text-5xl tracking-tight text-foreground sm:text-6xl md:text-7xl">
             Teamly
           </p>
-          <h1 className="mt-4 max-w-xl text-lg leading-relaxed text-white/70 sm:text-xl">
-            Собери пати за минуту — как каталог игр, только для живых сборов.
+          <h1 className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            {t("catalog.headline")}
           </h1>
         </section>
 
@@ -98,11 +101,11 @@ export function CatalogHome() {
             onClick={() => setTypeFilter("all")}
             className={`rounded-lg px-3 py-1.5 text-sm transition ${
               filters.type === "all"
-                ? "bg-[var(--brand)] text-black"
-                : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
+                ? "bg-[var(--brand)] text-primary-foreground"
+                : "border border-border bg-secondary/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
             }`}
           >
-            Все
+            {t("catalog.all")}
           </button>
           {availableTypes.map((type) => (
             <button
@@ -112,24 +115,24 @@ export function CatalogHome() {
               onClick={() => setTypeFilter(type)}
               className={`rounded-lg px-3 py-1.5 text-sm transition ${
                 filters.type === type
-                  ? "bg-[var(--brand)] text-black"
-                  : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
+                  ? "bg-[var(--brand)] text-primary-foreground"
+                  : "border border-border bg-secondary/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
               }`}
             >
-              {gameTypeLabel[type]}
+              {t(`type.${type}`)}
             </button>
           ))}
         </div>
 
         <div className="mb-6 max-w-md">
           <label className="relative block w-full">
-            <span className="sr-only">Поиск игры</span>
+            <span className="sr-only">{t("catalog.searchLabel")}</span>
             <input
               value={queryDraft}
               onChange={(event) => setQueryDraft(event.target.value)}
-              placeholder="Найти игру или тип…"
+              placeholder={t("catalog.search")}
               data-testid="catalog-search"
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)]/50"
+              className="w-full rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-[var(--brand)]/50"
             />
           </label>
         </div>
@@ -143,10 +146,10 @@ export function CatalogHome() {
               key={game.id}
               href={`/g/${game.id}`}
               data-testid={`catalog-game-${game.id}`}
-              className="group relative animate-fade-up overflow-hidden rounded-xl outline-none ring-offset-2 ring-offset-[#0b0b0d] transition duration-300 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+              className="group relative animate-fade-up overflow-hidden rounded-xl outline-none ring-offset-2 ring-offset-background transition duration-300 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
               style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
             >
-              <div className="relative aspect-[3/4] overflow-hidden bg-[#161618]">
+              <div className="relative aspect-[3/4] overflow-hidden bg-card">
                 <CoverImage
                   gameId={game.id}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
@@ -157,15 +160,18 @@ export function CatalogHome() {
                     {game.name}
                   </p>
                   <p className="mt-0.5 text-[10px] uppercase tracking-wide text-white/45">
-                    {gameTypeLabel[game.type]}
+                    {t(`type.${game.type}`)}
                   </p>
                   <p className="mt-1 text-[11px] text-white/70 sm:text-xs">
-                    {game.looking} ищут · {game.openParties} сборов
+                    {t("catalog.lookingParties", {
+                      looking: game.looking,
+                      parties: game.openParties,
+                    })}
                   </p>
                 </div>
                 {game.onlineNow > 0 ? (
                   <span className="absolute left-2 top-2 rounded-md bg-black/45 px-1.5 py-0.5 text-[10px] text-emerald-300 backdrop-blur">
-                    {game.onlineNow} онлайн
+                    {t("catalog.online", { n: game.onlineNow })}
                   </span>
                 ) : null}
               </div>
@@ -174,9 +180,7 @@ export function CatalogHome() {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="mt-10 text-sm text-white/50">
-            Ничего не нашлось. Сбросьте тип или поиск.
-          </p>
+          <p className="mt-10 text-sm text-muted-foreground">{t("catalog.empty")}</p>
         ) : null}
       </main>
     </SiteChrome>

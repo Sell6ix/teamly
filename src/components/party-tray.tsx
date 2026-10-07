@@ -1,13 +1,13 @@
 "use client";
 
 import { ProfileLinks } from "@/components/profile-links";
+import { useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
 import { YOU_NAME } from "@/lib/data";
 import {
   lfpTemplatesFor,
   loadProfile,
-  START_SLOTS,
 } from "@/lib/profile";
 import { Check, Copy, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
@@ -40,6 +40,7 @@ export function PartyTray() {
     copyReadyBrief,
     gameId,
   } = useParty();
+  const t = useT();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -52,6 +53,13 @@ export function PartyTray() {
   const [looking, setLooking] = useState(false);
   const [note, setNote] = useState("");
   const [startsAt, setStartsAt] = useState("сегодня 21:00");
+  const startSlots = [
+    { id: "", label: t("tray.slotNone") },
+    { id: "сегодня 19:00", label: t("tray.slotToday19") },
+    { id: "сегодня 21:00", label: t("tray.slotToday21") },
+    { id: "сегодня 23:00", label: t("tray.slotToday23") },
+    { id: "завтра вечером", label: t("tray.slotTomorrow") },
+  ];
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showLfp, setShowLfp] = useState(false);
   const canNativeShare = useSyncExternalStore(subscribeNoop, getCanShare, () => false);
@@ -97,11 +105,11 @@ export function PartyTray() {
         <div>
           <p className="flex items-center gap-2 font-display text-lg text-white">
             <Users className="size-4 text-[var(--brand)]" />
-            {joinedParty ? "Вы в сборе" : "Ваша пати"}
+            {joinedParty ? t("tray.inGathering") : t("tray.yourParty")}
           </p>
           <p className="mt-1 text-xs text-white/50">
-            {filledCount} из {seats.length} · код {joinCode}
-            {published ? " · в ленте" : ""}
+            {t("tray.ofCode", { filled: filledCount, total: seats.length, code: joinCode })}
+            {published ? t("tray.inFeed") : ""}
           </p>
         </div>
         <button
@@ -109,7 +117,7 @@ export function PartyTray() {
           className="lg:hidden text-xs text-white/50"
           onClick={() => setMobileOpen(false)}
         >
-          Свернуть
+          {t("tray.collapse")}
         </button>
       </div>
 
@@ -117,7 +125,7 @@ export function PartyTray() {
         <p className="mb-3 text-sm font-medium text-white/90">{partyName}</p>
       ) : (
         <label className="mb-3 block text-xs text-white/45">
-          Название
+          {t("tray.name")}
           <input
             value={partyName}
             onChange={(event) => setPartyName(event.target.value)}
@@ -140,7 +148,7 @@ export function PartyTray() {
                   <span className="font-medium text-white">
                     {youProfile.displayName || YOU_NAME}
                   </span>{" "}
-                  <span className="text-[11px] text-white/40">это вы</span>
+                  <span className="text-[11px] text-white/40">{t("tray.you")}</span>
                   <div className="mt-0.5">
                     <ProfileLinks
                       steamProfileUrl={youProfile.steamProfileUrl}
@@ -174,7 +182,7 @@ export function PartyTray() {
                       variant="ghost"
                       onClick={() => kick(seat.player.id)}
                     >
-                      Убрать
+                      {t("tray.remove")}
                     </Button>
                   ) : null}
                 </>
@@ -193,7 +201,7 @@ export function PartyTray() {
               className="mt-2 rounded-md border border-dashed border-white/12 px-2.5 py-2 text-center text-xs text-white/40"
               data-testid="party-empty-seats"
             >
-              Ещё {emptyIndexes.length} свободных мест
+              {t("tray.moreFree", { n: emptyIndexes.length })}
             </p>
           );
         }
@@ -204,7 +212,7 @@ export function PartyTray() {
                 key={index}
                 className="rounded-md border border-dashed border-white/12 px-2 py-1.5 text-center text-[11px] text-white/35"
               >
-                Свободно
+                {t("tray.free")}
               </li>
             ))}
           </ul>
@@ -219,10 +227,10 @@ export function PartyTray() {
               className="text-[11px] uppercase tracking-wide text-white/40"
               onClick={() => setShowLfp((value) => !value)}
             >
-              {showLfp ? "Скрыть текст сбора" : "Текст сбора и слот"}
+              {showLfp ? t("tray.lfpToggleHide") : t("tray.lfpToggleShow")}
             </button>
-            <div className={showLfp ? "space-y-2" : "hidden lg:block lg:space-y-2"}>
-            <p className="text-[11px] uppercase tracking-wide text-white/40">Шаблон LFP</p>
+            <div className={showLfp ? "space-y-2" : "hidden"}>
+            <p className="text-[11px] uppercase tracking-wide text-white/40">{t("tray.lfpTemplate")}</p>
             <div className="flex flex-wrap gap-1.5">
               {templates.slice(0, 4).map((template) => (
                 <button
@@ -241,7 +249,7 @@ export function PartyTray() {
               ))}
             </div>
             <label className="block text-xs text-white/45">
-              Текст сбора
+              {t("tray.lfpNote")}
               <textarea
                 value={note}
                 onChange={(event) => {
@@ -249,20 +257,20 @@ export function PartyTray() {
                   setTemplateId(null);
                 }}
                 rows={2}
-                placeholder="Коротко: кого ищете…"
+                placeholder={t("tray.lfpNotePh")}
                 data-testid="lfp-note"
                 className="mt-1 w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--brand)]/50"
               />
             </label>
             <label className="block text-xs text-white/45">
-              Слот
+              {t("tray.slot")}
               <select
                 value={startsAt}
                 onChange={(event) => setStartsAt(event.target.value)}
                 data-testid="lfp-starts"
                 className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--brand)]/50"
               >
-                {START_SLOTS.map((slot) => (
+                {startSlots.map((slot) => (
                   <option key={slot.id || "none"} value={slot.id}>
                     {slot.label}
                   </option>
@@ -284,7 +292,7 @@ export function PartyTray() {
               variant="outline"
               className="border-white/15 bg-white/5"
             >
-              {lookingPosted ? "Уже в ленте" : "Я ищу"}
+              {lookingPosted ? t("tray.alreadyLooking") : t("tray.looking")}
             </Button>
             <Button
               type="button"
@@ -294,7 +302,7 @@ export function PartyTray() {
               onClick={() => void handlePublish()}
             >
               <Radio data-icon="inline-start" />
-              {published ? "В сборах" : "Открыть сбор"}
+              {published ? t("tray.inParties") : t("tray.openParty")}
             </Button>
           </div>
         ) : null}
@@ -310,7 +318,7 @@ export function PartyTray() {
               className="border-white/15 bg-white/5"
             >
               <Share2 data-icon="inline-start" />
-              Поделиться
+              {t("tray.share")}
             </Button>
           ) : null}
           <Button
@@ -322,7 +330,7 @@ export function PartyTray() {
             className={`border-white/15 bg-white/5 ${canNativeShare ? "" : "sm:col-span-2"}`}
           >
             <Copy data-icon="inline-start" />
-            Скопировать ссылку
+            {t("tray.copyLink")}
           </Button>
         </div>
         <p className="flex items-center gap-1.5 text-[11px] text-white/40">
@@ -332,15 +340,15 @@ export function PartyTray() {
 
         {joinedParty ? (
           <Button type="button" variant="outline" onClick={leaveJoined}>
-            Выйти из сбора
+            {t("tray.leave")}
           </Button>
         ) : null}
 
         {!ready && canConfirm ? (
           <p className="rounded-lg border border-[var(--brand)]/25 bg-[var(--brand)]/10 px-3 py-2 text-[11px] leading-4 text-[var(--brand)]">
             {full
-              ? "Состав полный — подтвердите, и можно заходить в игру."
-              : `Уже ${filledCount} из ${seats.length}. Можно подтвердить сейчас или добрать слоты.`}
+              ? t("tray.readyHintFull")
+              : t("tray.readyHintPartial", { filled: filledCount, total: seats.length })}
           </p>
         ) : null}
 
@@ -357,20 +365,20 @@ export function PartyTray() {
           {ready ? (
             <>
               <PartyPopper data-icon="inline-start" />
-              Пати готова — бриф скопирован
+              {t("tray.readyDone")}
             </>
           ) : full ? (
-            "Подтвердить и скопировать бриф"
+            t("tray.confirm")
           ) : canConfirm ? (
-            `Собраться ${filledCount} из ${seats.length}`
+            t("tray.gatherPartial", { filled: filledCount, total: seats.length })
           ) : (
-            `Нужно ещё ${Math.max(0, 2 - filledCount)}`
+            t("tray.needMore", { n: Math.max(0, 2 - filledCount) })
           )}
         </Button>
         {ready ? (
           <p className="flex items-center gap-1 text-xs text-emerald-300">
             <Check className="size-3" />
-            В буфере: состав, ссылка /join и Discord/Steam. Кидайте в чат и заходите в игру.
+            {t("tray.readyClipboard")}
           </p>
         ) : null}
       </div>
@@ -395,12 +403,12 @@ export function PartyTray() {
           >
             <span>
               <span className="block font-display text-base text-white">
-                Пати · {filledCount}/{seats.length}
+                {t("tray.partyCompact", { filled: filledCount, total: seats.length })}
               </span>
-              <span className="text-xs text-white/45">Открыть трей и ссылку</span>
+              <span className="text-xs text-white/45">{t("tray.openSheetHint")}</span>
             </span>
             <span className="rounded-md bg-[var(--brand)]/20 px-2 py-1 text-xs text-[var(--brand)]">
-              Открыть
+              {t("tray.openSheet")}
             </span>
           </button>
         ) : (
@@ -411,7 +419,7 @@ export function PartyTray() {
               onClick={() => setMobileOpen(false)}
               data-testid="party-sheet-close"
             >
-              Свернуть трей
+              {t("tray.collapseTray")}
             </button>
             {body}
           </div>

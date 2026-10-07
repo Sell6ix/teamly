@@ -1,6 +1,7 @@
 "use client";
 
 import { isBlocked } from "@/lib/blacklist";
+import { tStored } from "@/lib/i18n/context";
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { languageLabel, loadProfile } from "@/lib/profile";
@@ -103,7 +104,7 @@ function makeJoinCode() {
 function defaultSnapshot(stableCode = true): PartySnapshot {
   return {
     joinCode: stableCode ? "·····" : makeJoinCode(),
-    partyName: `Пати ${YOU_NAME}`,
+    partyName: tStored("party.defaultName", { name: YOU_NAME }),
     seats: makeSeats(5),
     joinedParty: null,
     ready: false,
@@ -177,7 +178,7 @@ function writeSnapshot(next: PartySnapshot) {
 
 function seatsToStored(seats: Seat[]): StoredSeat[] {
   return seats.map((seat) => {
-    if (seat.kind === "you") return { kind: "you", name: YOU_NAME, role: "Хост" };
+    if (seat.kind === "you") return { kind: "you", name: YOU_NAME, role: tStored("party.hostRole") };
     if (seat.kind === "player") {
       return { kind: "player", name: seat.player.name, role: seat.player.role };
     }
@@ -196,7 +197,7 @@ function sessionToSeats(session: JoinSession): Seat[] {
       skill: session.skill,
       hours: session.hours,
       lookingForSize: session.partySize,
-      role: seat.role || "В пати",
+      role: seat.role || tStored("party.inPartyRole"),
       mic: session.micRequired,
       online: true,
       bio: session.note,
@@ -283,7 +284,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         commit({
           ...current,
           joinCode: makeJoinCode(),
-          partyName: `Пати ${YOU_NAME}`,
+          partyName: tStored("party.defaultName", { name: YOU_NAME }),
           seats: makeSeats(size),
           joinedParty: null,
           ready: false,
@@ -303,11 +304,11 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     (player: Player) => {
       const current = ensureClientSnapshot();
       if (current.joinedParty) {
-        toast.error("Вы уже в чужом сборе. Выйдите, чтобы собрать свою пати.");
+        toast.error(tStored("toast.alreadyInOther"));
         return;
       }
       if (isBlocked(personIdOf(player))) {
-        toast.error("Этот человек в чёрном списке.");
+        toast.error(tStored("toast.blacklisted"));
         return;
       }
       if (current.seats.some((seat) => seat.kind === "player" && seat.player.id === player.id)) {
@@ -315,14 +316,14 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
       }
       const emptyIndex = current.seats.findIndex((seat) => seat.kind === "empty");
       if (emptyIndex === -1) {
-        toast.error("Пати уже полная.");
+        toast.error(tStored("toast.partyFull"));
         return;
       }
       const seats = [...current.seats];
       seats[emptyIndex] = { kind: "player", player };
       rememberInvite(player);
       commit({ ...current, seats, feedNonce: current.feedNonce + 1 });
-      toast.success(`${player.name} в пати`, { duration: 1800 });
+      toast.success(tStored("toast.invited", { name: player.name }), { duration: 1800 });
     },
     [commit],
   );
@@ -344,7 +345,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
   const joinParty = useCallback(
     (party: OpenParty) => {
       if (party.filled >= party.partySize) {
-        toast.error("В этом сборе уже нет мест.");
+        toast.error(tStored("toast.full"));
         return;
       }
       const names =
@@ -352,7 +353,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           ? party.members.slice(0, Math.max(1, party.filled))
           : [
               party.leader,
-              ...Array.from({ length: Math.max(0, party.filled - 1) }, (_, index) => `Участник ${index + 2}`),
+              ...Array.from({ length: Math.max(0, party.filled - 1) }, (_, index) => tStored("party.memberN", { n: index + 2 })),
             ];
       const placeholders: Player[] = names.map((name, index) => ({
         id: `slot-${party.id}-${index}`,
@@ -362,7 +363,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         skill: party.skill,
         hours: party.hours,
         lookingForSize: party.partySize,
-        role: index === 0 ? "Лидер сбора" : "Уже в пати",
+        role: index === 0 ? tStored("party.leaderRole") : tStored("party.inPartyRole"),
         mic: party.micRequired,
         online: true,
         bio: party.note,
@@ -390,7 +391,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           hours: party.hours,
         },
       });
-      toast.success(`Вы в сборе «${party.name}»`);
+      toast.success(tStored("toast.joined", { name: party.name }));
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("teamly:open-tray"));
       }
@@ -403,13 +404,13 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     commit({
       ...current,
       joinCode: makeJoinCode(),
-      partyName: `Пати ${YOU_NAME}`,
+      partyName: tStored("party.defaultName", { name: YOU_NAME }),
       seats: makeSeats(current.seats.length),
       joinedParty: null,
       ready: false,
       published: false,
     });
-    toast("Вы вышли из сбора");
+    toast(tStored("toast.left"));
   }, [commit]);
 
   const loadJoinCode = useCallback(
@@ -437,15 +438,15 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
               hours: session.hours,
             },
           });
-          toast.success(`Открыта пати по коду ${session.code}`);
+          toast.success(tStored("toast.openedByCode", { code: session.code }));
           return true;
         }
         if (response.status === 404) {
-          toast.error("Пати с таким кодом не найдена. Попросите хоста открыть сбор.");
+          toast.error(tStored("toast.codeMissing"));
           return false;
         }
       } catch {
-        toast.error("Не удалось загрузить пати по коду.");
+        toast.error(tStored("toast.codeLoadFail"));
         return false;
       }
       return false;
@@ -469,11 +470,11 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const current = ensureClientSnapshot();
     if (!current.gameId) {
-      toast.error("Сначала зайдите в лобби игры.");
+      toast.error(tStored("toast.needLobby"));
       return null;
     }
     if (current.joinedParty) {
-      toast.error("Вы в чужом сборе — выйдите, чтобы открыть свой.");
+      toast.error(tStored("toast.inOtherLeave"));
       return null;
     }
 
@@ -494,7 +495,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           hours: current.lobbyMeta.hours,
           seats: seatsToStored(current.seats),
           filled: current.seats.filter((seat) => seat.kind !== "empty").length,
-          note: options?.note?.trim() || `Ищем ещё · ${current.partyName}`,
+          note: options?.note?.trim() || tStored("party.seekingNote", { name: current.partyName }),
           startsAt: options?.startsAt ?? null,
           region: profile.region,
           voicePlatform: profile.voicePlatform,
@@ -506,7 +507,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         error?: string;
       };
       if (!response.ok || !data.party) {
-        toast.error(data.error ?? "Не удалось открыть сбор.");
+        toast.error(data.error ?? tStored("toast.publishFail"));
         return null;
       }
       const after = ensureClientSnapshot();
@@ -515,10 +516,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         published: true,
         feedNonce: after.feedNonce + 1,
       });
-      toast.success("Сбор открыт в ленте лобби");
+      toast.success(tStored("toast.publishOk"));
       return data.party;
     } catch {
-      toast.error("Сеть недоступна — сбор не опубликован.");
+      toast.error(tStored("toast.publishNetwork"));
       return null;
     }
   }, [commit]);
@@ -527,7 +528,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     async (options?: { bio?: string; role?: string }) => {
       const current = ensureClientSnapshot();
       if (!current.gameId) {
-        toast.error("Сначала зайдите в лобби игры.");
+        toast.error(tStored("toast.needLobby"));
         return false;
       }
       const profile = loadProfile();
@@ -544,8 +545,8 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             hours: current.lobbyMeta.hours,
             accountId: session?.user?.id || profile.accountId || "you",
             name: profile.displayName || session?.user?.name || YOU_NAME,
-            role: options?.role || "Ищу пати",
-            bio: options?.bio || "Ищу пати по фильтрам лобби. Можно писать в Discord.",
+            role: options?.role || tStored("party.lookingRole"),
+            bio: options?.bio || tStored("party.lookingBio"),
             region: profile.region,
             voicePlatform: profile.voicePlatform,
             language: profile.language,
@@ -557,7 +558,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
-          toast.error(data.error ?? "Не удалось выставить «ищу».");
+          toast.error(data.error ?? tStored("toast.lookingFail"));
           return false;
         }
         const after = ensureClientSnapshot();
@@ -566,10 +567,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           lookingPosted: true,
           feedNonce: after.feedNonce + 1,
         });
-        toast.success("Вы в ленте игроков");
+        toast.success(tStored("toast.lookingOk"));
         return true;
       } catch {
-        toast.error("Сеть недоступна — карточка не опубликована.");
+        toast.error(tStored("toast.lookingNetwork"));
         return false;
       }
     },
@@ -589,11 +590,15 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
       .filter((name): name is string => Boolean(name));
     const url = `${window.location.origin}/join/${current.joinCode}`;
     const lines = [
-      `${current.partyName} готова`,
+      tStored("brief.ready", { name: current.partyName }),
       names.join(", "),
-      current.joinedParty?.startsAt ? `Старт: ${current.joinedParty.startsAt}` : null,
-      profile.language ? `Язык: ${languageLabel[profile.language]}` : null,
-      `Ссылка: ${url}`,
+      current.joinedParty?.startsAt
+        ? tStored("brief.start", { when: current.joinedParty.startsAt })
+        : null,
+      profile.language
+        ? tStored("brief.lang", { lang: languageLabel[profile.language] })
+        : null,
+      tStored("brief.link", { url }),
       profile.discordUrl ? `Discord: ${profile.discordUrl}` : null,
       profile.steamProfileUrl ? `Steam: ${profile.steamProfileUrl}` : null,
     ].filter(Boolean);
@@ -618,21 +623,21 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           const data = (await notify.json()) as { via?: string };
           toast.success(
             data.via === "bot"
-              ? "Бриф ушёл в Discord через бота"
-              : "Бриф отправлен в Discord",
+              ? tStored("toast.briefBot")
+              : tStored("toast.briefDiscord"),
           );
         } else if (mode === "copied") {
-          toast.success("Бриф скопирован (Discord env не настроен)");
+          toast.success(tStored("toast.briefNoDiscord"));
         } else {
-          toast.success("Бриф скопирован");
+          toast.success(tStored("toast.briefCopied"));
         }
       } catch {
-        if (mode === "copied") toast.success("Бриф пати скопирован — кидайте в чат");
-        else toast.success("Можно звать в клиент. Бриф скопирован.");
+        if (mode === "copied") toast.success(tStored("toast.briefCopiedChat"));
+        else toast.success(tStored("toast.briefReadyShare"));
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      toast.error("Не удалось скопировать бриф");
+      toast.error(tStored("toast.briefFail"));
     }
   }, []);
 
@@ -644,15 +649,15 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
       const mode = await shareOrCopy(
         {
           title: `Teamly · ${current.partyName}`,
-          text: "Залетай в пати",
+          text: tStored("party.shareInvite"),
           url,
         },
         prefer,
       );
-      if (mode === "copied") toast.success("Ссылка на пати скопирована");
+      if (mode === "copied") toast.success(tStored("toast.partyLinkCopied"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      toast.error("Не удалось поделиться ссылкой");
+      toast.error(tStored("toast.shareFail"));
     }
   }, []);
 

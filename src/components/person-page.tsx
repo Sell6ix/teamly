@@ -9,13 +9,14 @@ import {
   loadBlacklist,
   unblockPerson,
 } from "@/lib/blacklist";
-import { regionLabel, voiceLabel } from "@/lib/profile";
+import { useT } from "@/lib/i18n/context";
 import { gameName, personById, playersOfPerson } from "@/lib/people";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function PersonPage({ personId }: { personId: string }) {
+  const t = useT();
   const person = useMemo(() => personById(personId), [personId]);
   const rows = useMemo(() => playersOfPerson(personId), [personId]);
   const [blocked, setBlocked] = useState(false);
@@ -28,9 +29,9 @@ export function PersonPage({ personId }: { personId: string }) {
     return (
       <SiteChrome subtle>
         <main className="mx-auto max-w-lg flex-1 px-4 py-16 text-center">
-          <h1 className="font-display text-3xl text-white">Человек не найден</h1>
+          <h1 className="font-display text-3xl text-white">{t("people.notFound")}</h1>
           <Link href="/people" className="mt-4 inline-block text-sm text-[var(--brand)]">
-            ← К каталогу людей
+            {t("people.backToPeople")}
           </Link>
         </main>
       </SiteChrome>
@@ -41,31 +42,31 @@ export function PersonPage({ personId }: { personId: string }) {
     if (blocked) {
       unblockPerson(personId);
       setBlocked(false);
-      toast.success(`${person!.name} снова в ленте`);
+      toast.success(t("toast.restored", { name: person!.name }));
       return;
     }
     blockPerson(personId, person!.name);
     setBlocked(true);
-    toast.success(`${person!.name} скрыт из лент`);
+    toast.success(t("toast.hidden", { name: person!.name }));
   }
 
   return (
     <SiteChrome subtle>
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-16 pt-10 sm:px-6">
         <Link href="/people" className="text-sm text-white/50 hover:text-white">
-          ← Люди
+          {t("people.back")}
         </Link>
         <header className="mt-4 animate-fade-up">
           <h1 className="font-display text-4xl text-white">{person.name}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/55">
             {person.online ? (
-              <span className="text-emerald-300">онлайн</span>
+              <span className="text-emerald-300">{t("people.online")}</span>
             ) : (
-              <span>офлайн</span>
+              <span>{t("people.offline")}</span>
             )}
-            {person.region ? <span>· {regionLabel[person.region]}</span> : null}
+            {person.region ? <span>· {t(`region.${person.region}`)}</span> : null}
             {person.voicePlatform ? (
-              <span>· {voiceLabel[person.voicePlatform]}</span>
+              <span>· {t(`voice.${person.voicePlatform}`)}</span>
             ) : null}
             <ProfileLinks
               steamProfileUrl={person.steamProfileUrl}
@@ -81,13 +82,13 @@ export function PersonPage({ personId }: { personId: string }) {
               data-testid="person-block"
               onClick={toggleBlock}
             >
-              {blocked ? "Убрать из чёрного списка" : "В чёрный список"}
+              {blocked ? t("people.unblock") : t("people.block")}
             </Button>
           </div>
         </header>
 
         <section className="mt-10">
-          <h2 className="text-xs uppercase tracking-wide text-white/40">Игры</h2>
+          <h2 className="text-xs uppercase tracking-wide text-white/40">{t("people.games")}</h2>
           <ul className="mt-3 space-y-3">
             {rows.map((player) => (
               <li
@@ -98,7 +99,7 @@ export function PersonPage({ personId }: { personId: string }) {
                   <div>
                     <p className="font-medium text-white">{gameName(player.gameId)}</p>
                     <p className="mt-1 text-sm text-white/50">
-                      {player.role} · ищет {player.lookingForSize}
+                      {player.role} · {t("people.lookingFor", { n: player.lookingForSize })}
                     </p>
                     <p className="mt-2 text-sm text-white/60">{player.bio}</p>
                   </div>
@@ -106,7 +107,7 @@ export function PersonPage({ personId }: { personId: string }) {
                     href={`/g/${player.gameId}`}
                     className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition hover:border-[var(--brand)]/40"
                   >
-                    В лобби
+                    {t("people.toLobby")}
                   </Link>
                 </div>
               </li>

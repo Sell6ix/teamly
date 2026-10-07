@@ -1,12 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/context";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function LoginForm({ discordEnabled }: { discordEnabled: boolean }) {
-  const [name, setName] = useState("Иван");
+  const t = useT();
+  const [name, setName] = useState("Ivan");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setName(t("login.defaultName"));
+  }, [t]);
 
   async function demoLogin() {
     setPending(true);
@@ -31,24 +37,21 @@ export function LoginForm({ discordEnabled }: { discordEnabled: boolean }) {
             void signIn("discord", { callbackUrl: "/" });
           }}
         >
-          Войти через Discord
+          {t("login.discord")}
         </Button>
       ) : (
-        <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/50">
-          Discord OAuth выключен. Задайте{" "}
-          <code className="text-white/70">AUTH_SECRET</code>,{" "}
-          <code className="text-white/70">AUTH_DISCORD_ID</code>,{" "}
-          <code className="text-white/70">AUTH_DISCORD_SECRET</code>.
+        <p className="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+          {t("login.discordOff")}
         </p>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <label className="block text-xs text-white/45">
-          Демо-имя (SQLite)
+      <div className="rounded-2xl border border-border bg-secondary/30 p-4">
+        <label className="block text-xs text-muted-foreground">
+          {t("login.demoName")}
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--brand)]/50"
+            className="mt-1 w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--brand)]/50"
             data-testid="login-demo-name"
           />
         </label>
@@ -61,7 +64,7 @@ export function LoginForm({ discordEnabled }: { discordEnabled: boolean }) {
           disabled={pending}
           onClick={() => void demoLogin()}
         >
-          Войти локально
+          {t("login.demo")}
         </Button>
       </div>
     </div>

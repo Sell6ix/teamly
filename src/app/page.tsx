@@ -5,8 +5,8 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#0b0b0d] text-white/50">
-          Загрузка каталога…
+        <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+          Teamly…
         </div>
       }
     >

@@ -1,15 +1,14 @@
 "use client";
 
+import { LocaleSwitch } from "@/components/locale-switch";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/context";
 import {
   defaultProfile,
-  languageLabel,
   LANGUAGES,
   loadProfile,
-  regionLabel,
   REGIONS,
   saveProfile,
-  voiceLabel,
   VOICE_PLATFORMS,
   type UserProfile,
 } from "@/lib/profile";
@@ -30,6 +29,7 @@ export function ProfilePanel({
   onSaved?: (profile: UserProfile) => void;
 }) {
   const { status } = useSession();
+  const t = useT();
   const [draft, setDraft] = useState<UserProfile>(defaultProfile);
   const [saving, setSaving] = useState(false);
 
@@ -63,7 +63,7 @@ export function ProfilePanel({
           body: JSON.stringify(draft),
         });
         if (!response.ok) {
-          toast.error("Не удалось сохранить в БД");
+          toast.error(t("profile.saveFail"));
           return;
         }
         const data = (await response.json()) as { profile?: UserProfile };
@@ -74,7 +74,7 @@ export function ProfilePanel({
       } else {
         onSaved?.(draft);
       }
-      toast.success("Профиль сохранён");
+      toast.success(t("profile.saved"));
       onClose();
     } finally {
       setSaving(false);
@@ -86,7 +86,7 @@ export function ProfilePanel({
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Закрыть"
+        aria-label={t("profile.close")}
         onClick={onClose}
       />
       <div
@@ -96,12 +96,10 @@ export function ProfilePanel({
         className="relative z-10 w-full max-w-md rounded-2xl border border-white/12 bg-[#141416] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
       >
         <h2 id="profile-title" className="font-display text-xl text-white">
-          Мой профиль
+          {t("profile.title")}
         </h2>
         <p className="mt-1 text-xs text-white/45">
-          {status === "authenticated"
-            ? "Сохраняется в SQLite на сервере."
-            : "Локально в браузере. Войдите — профиль уедет в БД."}
+          {status === "authenticated" ? t("profile.serverHint") : t("profile.localHint")}
         </p>
         {draft.accountId ? (
           <p className="mt-2 font-mono text-[11px] text-white/35" data-testid="profile-account-id">
@@ -110,8 +108,12 @@ export function ProfilePanel({
         ) : null}
 
         <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2">
+            <span className="text-xs text-white/45">{t("profile.uiLanguage")}</span>
+            <LocaleSwitch />
+          </div>
           <label className="block text-xs text-white/45">
-            Имя
+            {t("profile.name")}
             <input
               value={draft.displayName}
               onChange={(e) => setDraft({ ...draft, displayName: e.target.value })}
@@ -120,7 +122,7 @@ export function ProfilePanel({
             />
           </label>
           <label className="block text-xs text-white/45">
-            Steam URL
+            {t("profile.steam")}
             <input
               value={draft.steamProfileUrl}
               onChange={(e) => setDraft({ ...draft, steamProfileUrl: e.target.value })}
@@ -130,7 +132,7 @@ export function ProfilePanel({
             />
           </label>
           <label className="block text-xs text-white/45">
-            Discord invite / профиль
+            {t("profile.discord")}
             <input
               value={draft.discordUrl}
               onChange={(e) => setDraft({ ...draft, discordUrl: e.target.value })}
@@ -140,7 +142,7 @@ export function ProfilePanel({
             />
           </label>
           <label className="block text-xs text-white/45">
-            Discord webhook (опционально)
+            {t("profile.webhook")}
             <input
               value={draft.discordWebhookUrl}
               onChange={(e) =>
@@ -151,11 +153,11 @@ export function ProfilePanel({
               data-testid="profile-discord-webhook"
             />
             <span className="mt-1 block text-[11px] text-white/35">
-              Либо webhook здесь, либо бот через DISCORD_BOT_TOKEN + канал в env.
+              {t("profile.webhookHint")}
             </span>
           </label>
           <label className="block text-xs text-white/45">
-            Riot ID
+            {t("profile.riot")}
             <input
               value={draft.riotTag}
               onChange={(e) => setDraft({ ...draft, riotTag: e.target.value })}
@@ -165,7 +167,7 @@ export function ProfilePanel({
             />
           </label>
           <label className="block text-xs text-white/45">
-            Faceit URL
+            {t("profile.faceit")}
             <input
               value={draft.faceitUrl}
               onChange={(e) => setDraft({ ...draft, faceitUrl: e.target.value })}
@@ -176,7 +178,7 @@ export function ProfilePanel({
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs text-white/45">
-              Регион
+              {t("profile.region")}
               <select
                 value={draft.region}
                 onChange={(e) =>
@@ -187,13 +189,13 @@ export function ProfilePanel({
               >
                 {REGIONS.map((region) => (
                   <option key={region} value={region}>
-                    {regionLabel[region]}
+                    {t(`region.${region}`)}
                   </option>
                 ))}
               </select>
             </label>
             <label className="block text-xs text-white/45">
-              Голос
+              {t("profile.voice")}
               <select
                 value={draft.voicePlatform}
                 onChange={(e) =>
@@ -207,14 +209,14 @@ export function ProfilePanel({
               >
                 {VOICE_PLATFORMS.map((voice) => (
                   <option key={voice} value={voice}>
-                    {voiceLabel[voice]}
+                    {t(`voice.${voice}`)}
                   </option>
                 ))}
               </select>
             </label>
           </div>
           <label className="block text-xs text-white/45">
-            Язык в пати
+            {t("profile.partyLanguage")}
             <select
               value={draft.language}
               onChange={(e) =>
@@ -228,7 +230,7 @@ export function ProfilePanel({
             >
               {LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>
-                  {languageLabel[lang]}
+                  {t(`lang.${lang}`)}
                 </option>
               ))}
             </select>
@@ -243,10 +245,10 @@ export function ProfilePanel({
             disabled={saving}
             onClick={() => void save()}
           >
-            Сохранить
+            {t("profile.save")}
           </Button>
           <Button type="button" variant="outline" onClick={onClose}>
-            Отмена
+            {t("profile.cancel")}
           </Button>
         </div>
       </div>

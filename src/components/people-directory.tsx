@@ -11,7 +11,7 @@ import {
   type BlacklistEntry,
 } from "@/lib/blacklist";
 import { games } from "@/lib/data";
-import { regionLabel } from "@/lib/profile";
+import { useT } from "@/lib/i18n/context";
 import {
   allPeople,
   filterPeople,
@@ -30,6 +30,7 @@ export function PeopleDirectory({
   initialQuery?: string;
   initialGame?: GameId | "all";
 }) {
+  const t = useT();
   const people = useMemo(() => allPeople(), []);
   const [query, setQuery] = useState(initialQuery);
   const [gameId, setGameId] = useState<GameId | "all">(initialGame);
@@ -45,23 +46,22 @@ export function PeopleDirectory({
     if (isBlocked(person.personId, blacklist)) {
       const next = unblockPerson(person.personId, blacklist);
       setBlacklist(next);
-      toast.success(`${person.name} снова в ленте`);
+      toast.success(t("toast.restored", { name: person.name }));
       return;
     }
     const next = blockPerson(person.personId, person.name, blacklist);
     setBlacklist(next);
-    toast.success(`${person.name} в чёрном списке`);
+    toast.success(t("toast.blacklistedShort", { name: person.name }));
   }
 
   return (
     <SiteChrome>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-10 sm:px-6">
         <section className="mb-8 animate-fade-up">
-          <p className="text-xs uppercase tracking-wide text-white/40">Каталог людей</p>
-          <h1 className="mt-2 font-display text-4xl text-white sm:text-5xl">Люди</h1>
+          <p className="text-xs uppercase tracking-wide text-white/40">{t("people.eyebrow")}</p>
+          <h1 className="mt-2 font-display text-4xl text-white sm:text-5xl">{t("people.title")}</h1>
           <p className="mt-3 max-w-xl text-sm text-white/60 sm:text-base">
-            Поиск по демо-игрокам. Можно открыть карточку или спрятать человека из ленты
-            лобби.
+            {t("people.lead")}
           </p>
         </section>
 
@@ -69,7 +69,7 @@ export function PeopleDirectory({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Имя, игра, роль…"
+            placeholder={t("people.search")}
             data-testid="people-search"
             className="w-full flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-[var(--brand)]/50"
           />
@@ -79,7 +79,7 @@ export function PeopleDirectory({
             data-testid="people-game-filter"
             className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[var(--brand)]/50 sm:w-48"
           >
-            <option value="all">Все игры</option>
+            <option value="all">{t("people.allGames")}</option>
             {games.map((game) => (
               <option key={game.id} value={game.id}>
                 {game.name}
@@ -93,7 +93,7 @@ export function PeopleDirectory({
             className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-3"
             data-testid="blacklist-panel"
           >
-            <p className="text-xs uppercase tracking-wide text-white/40">Чёрный список</p>
+            <p className="text-xs uppercase tracking-wide text-white/40">{t("people.blacklist")}</p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {blacklist.map((entry) => (
                 <li key={entry.personId}>
@@ -103,7 +103,7 @@ export function PeopleDirectory({
                     onClick={() => {
                       const next = unblockPerson(entry.personId, blacklist);
                       setBlacklist(next);
-                      toast.success(`${entry.name} снова в ленте`);
+                      toast.success(t("toast.restored", { name: entry.name }));
                     }}
                     className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 transition hover:border-white/25 hover:text-white"
                   >
@@ -138,9 +138,9 @@ export function PeopleDirectory({
                         {person.name}
                       </Link>
                       {person.online ? (
-                        <span className="text-[11px] text-emerald-300">онлайн</span>
+                        <span className="text-[11px] text-emerald-300">{t("people.online")}</span>
                       ) : (
-                        <span className="text-[11px] text-white/35">офлайн</span>
+                        <span className="text-[11px] text-white/35">{t("people.offline")}</span>
                       )}
                       <ProfileLinks
                         steamProfileUrl={person.steamProfileUrl}
@@ -152,7 +152,7 @@ export function PeopleDirectory({
                     </div>
                     <p className="mt-1 text-sm text-white/50">
                       {person.gameIds.map(gameName).join(" · ")}
-                      {person.region ? ` · ${regionLabel[person.region]}` : ""}
+                      {person.region ? ` · ${t(`region.${person.region}`)}` : ""}
                     </p>
                     <p className="mt-1 text-xs text-white/40">{person.roles.slice(0, 3).join(" · ")}</p>
                   </div>
@@ -161,7 +161,7 @@ export function PeopleDirectory({
                       href={`/people/${person.personId}`}
                       className="inline-flex h-7 items-center rounded-lg border border-white/15 bg-white/5 px-2.5 text-[0.8rem] text-white/80 transition hover:border-white/30"
                     >
-                      Карточка
+                      {t("people.card")}
                     </Link>
                     <Button
                       type="button"
@@ -170,7 +170,7 @@ export function PeopleDirectory({
                       data-testid={`block-${person.personId}`}
                       onClick={() => toggleBlock(person)}
                     >
-                      {blocked ? "Вернуть" : "Скрыть"}
+                      {blocked ? t("people.restore") : t("people.hide")}
                     </Button>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export function PeopleDirectory({
         </ul>
 
         {filtered.length === 0 ? (
-          <p className="mt-10 text-sm text-white/50">Никого не нашлось. Ослабьте фильтр.</p>
+          <p className="mt-10 text-sm text-white/50">{t("people.empty")}</p>
         ) : null}
       </main>
     </SiteChrome>

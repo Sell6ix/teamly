@@ -16,6 +16,7 @@ import {
   roleOptionLabel,
   skillLabelFor,
 } from "@/lib/game-fields";
+import { useLocale, useT } from "@/lib/i18n/context";
 import {
   filtersToCriteria,
   lobbyHref,
@@ -24,17 +25,8 @@ import {
 } from "@/lib/lobby-url";
 import { shareOrCopy } from "@/lib/share";
 import {
-  formatHours,
-  hourLabel,
-  partySizeLabel,
-  playStyleLabel,
-} from "@/lib/labels";
-import {
-  languageLabel,
   LANGUAGES,
-  regionLabel,
   REGIONS,
-  voiceLabel,
   VOICE_PLATFORMS,
 } from "@/lib/profile";
 import { loadAccount } from "@/lib/account";
@@ -88,6 +80,8 @@ export function GameLobby({
   pathStyle?: string | null;
 }) {
   const party = useParty();
+  const t = useT();
+  const { locale } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const syncedRef = useRef<string>("");
@@ -97,7 +91,7 @@ export function GameLobby({
     [game.id],
   );
   const playStyles = useMemo(() => playStylesFor(game.id), [game.id]);
-  const roleFacet = useMemo(() => roleFacetFor(game.id), [game.id]);
+  const roleFacet = useMemo(() => roleFacetFor(game.id, locale), [game.id, locale]);
 
   const filters = useMemo(
     () =>
@@ -127,6 +121,52 @@ export function GameLobby({
   function applyFilters(next: LobbyFilters) {
     router.replace(lobbyHref(game.id, next, game), { scroll: false });
   }
+
+  const defaultPlayStyle = playStyles.includes("casual") ? "casual" : playStyles[0];
+  const filtersDirty =
+    filters.playStyle !== defaultPlayStyle ||
+    filters.partySize !== game.partySizes[0] ||
+    filters.skill !== 3 ||
+    filters.hours.join() !== "evening,night" ||
+    filters.roleTag !== null ||
+    filters.region !== null ||
+    filters.voicePlatform !== null ||
+    filters.language !== null;
+
+  function clearFilters() {
+    applyFilters({
+      playStyle: defaultPlayStyle,
+      partySize: game.partySizes[0],
+      skill: 3,
+      hours: ["evening", "night"],
+      roleTag: null,
+      region: null,
+      voicePlatform: null,
+      language: null,
+    });
+  }
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (!filtersDirty) return;
+      event.preventDefault();
+      clearFilters();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // clearFilters closes over latest filters via applyFilters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersDirty]);
 
   const criteria = useMemo(
     () => ({
@@ -178,7 +218,7 @@ export function GameLobby({
             setFeed({
               key,
               loading: false,
-              error: data.error ?? "Не получилось обновить ленту.",
+              error: data.error ?? t("lobby.feedErrorFallback"),
               result: null,
             });
             return;
@@ -197,7 +237,7 @@ export function GameLobby({
             setFeed({
               key,
               loading: false,
-              error: "Сеть недоступна. Проверьте соединение.",
+              error: t("lobby.networkError"),
               result: null,
             });
           }
@@ -209,20 +249,20 @@ export function GameLobby({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [criteria, key]);
+  }, [criteria, key, t]);
 
   async function shareLobby() {
     const url = `${window.location.origin}${lobbyHref(game.id, filters, game)}`;
     try {
       const mode = await shareOrCopy({
         title: `Teamly · ${game.name}`,
-        text: `Кто сейчас ищет в ${game.name}`,
+        text: t("lobby.shareText", { game: game.name }),
         url,
       });
-      if (mode === "copied") toast.success("Ссылка на лобби скопирована");
+      if (mode === "copied") toast.success(t("toast.lobbyLinkCopied"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      toast.error("Не удалось поделиться ссылкой");
+      toast.error(t("toast.shareFail"));
     }
   }
 
@@ -273,7 +313,7 @@ export function GameLobby({
 
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:px-6 sm:py-14">
           <Link href="/" className="text-xs text-white/50 transition hover:text-white/80">
-            ← Каталог игр
+            {t("lobby.back")}
           </Link>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="animate-fade-up">
@@ -281,8 +321,11 @@ export function GameLobby({
                 {game.name}
               </p>
               <p className="mt-3 text-sm text-white/65 sm:text-base">
-                {catalog?.looking ?? 0} ищут · {openCount} открытых сборов ·{" "}
-                {catalog?.onlineNow ?? 0} онлайн
+                {t("lobby.lookingOpenOnline", {
+                  looking: catalog?.looking ?? 0,
+                  parties: openCount,
+                  online: catalog?.onlineNow ?? 0,
+                })}
               </p>
             </div>
             <Button
@@ -294,7 +337,7 @@ export function GameLobby({
               data-testid="share-lobby"
             >
               <Share2 data-icon="inline-start" />
-              Поделиться
+              {t("lobby.share")}
             </Button>
           </div>
         </div>
@@ -303,7 +346,7 @@ export function GameLobby({
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-28 sm:px-6 lg:flex-row lg:items-start lg:pb-10">
         <section className="min-w-0 flex-1 space-y-5">
           <div className="sticky top-0 z-20 -mx-4 space-y-3 border-b border-white/6 bg-[#0b0b0d]/90 px-4 py-3 backdrop-blur-xl sm:-mx-0 sm:rounded-2xl sm:border sm:border-white/8 sm:px-4">
-            <ChipRow label="Стиль">
+            <ChipRow label={t("lobby.filterStyle")}>
               {playStyles.map((style) => (
                 <Chip
                   key={style}
@@ -311,11 +354,11 @@ export function GameLobby({
                   onClick={() => applyFilters({ ...filters, playStyle: style })}
                   testId={`style-${style}`}
                 >
-                  {playStyleLabel[style]}
+                  {t(`style.${style}`)}
                 </Chip>
               ))}
             </ChipRow>
-            <ChipRow label="Формат">
+            <ChipRow label={t("lobby.filterSize")}>
               {game.partySizes.map((size) => (
                 <Chip
                   key={size}
@@ -323,7 +366,7 @@ export function GameLobby({
                   onClick={() => applyFilters({ ...filters, partySize: size })}
                   testId={`size-${size}`}
                 >
-                  {partySizeLabel[size] ?? `${size}`}
+                  {t(`size.${size}`)}
                 </Chip>
               ))}
             </ChipRow>
@@ -335,7 +378,7 @@ export function GameLobby({
                   onClick={() => applyFilters({ ...filters, roleTag: null })}
                   testId="role-any"
                 >
-                  Любая
+                  {t("lobby.anyRole")}
                 </Chip>
                 {roleFacet.options.map((option) => (
                   <Chip
@@ -351,7 +394,7 @@ export function GameLobby({
             ) : null}
 
             <div className={moreFilters ? "space-y-3" : "hidden sm:block sm:space-y-3"}>
-              <ChipRow label="Уровень">
+              <ChipRow label={t("lobby.filterSkill")}>
                 {([1, 2, 3, 4, 5] as SkillLevel[]).map((level) => (
                   <Chip
                     key={level}
@@ -359,11 +402,11 @@ export function GameLobby({
                     onClick={() => applyFilters({ ...filters, skill: level })}
                     testId={`skill-${level}`}
                   >
-                    {skillLabelFor(game.id, level)}
+                    {skillLabelFor(game.id, level, locale)}
                   </Chip>
                 ))}
               </ChipRow>
-              <ChipRow label="Когда">
+              <ChipRow label={t("lobby.filterHours")}>
                 {hours.map((hour) => (
                   <Chip
                     key={hour}
@@ -371,17 +414,17 @@ export function GameLobby({
                     onClick={() => toggleHour(hour)}
                     testId={`hour-${hour}`}
                   >
-                    {hourLabel[hour]}
+                    {t(`hour.${hour}`)}
                   </Chip>
                 ))}
               </ChipRow>
-              <ChipRow label="Регион">
+              <ChipRow label={t("lobby.filterRegion")}>
                 <Chip
                   active={filters.region === null}
                   onClick={() => applyFilters({ ...filters, region: null })}
                   testId="region-any"
                 >
-                  Любой
+                  {t("lobby.any")}
                 </Chip>
                 {REGIONS.map((region) => (
                   <Chip
@@ -392,17 +435,17 @@ export function GameLobby({
                     }
                     testId={`region-${region}`}
                   >
-                    {regionLabel[region]}
+                    {t(`region.${region}`)}
                   </Chip>
                 ))}
               </ChipRow>
-              <ChipRow label="Голос">
+              <ChipRow label={t("lobby.filterVoice")}>
                 <Chip
                   active={filters.voicePlatform === null}
                   onClick={() => applyFilters({ ...filters, voicePlatform: null })}
                   testId="voice-any-filter"
                 >
-                  Не важно
+                  {t("lobby.voiceDoesntMatter")}
                 </Chip>
                 {VOICE_PLATFORMS.map((voice) => (
                   <Chip
@@ -416,17 +459,17 @@ export function GameLobby({
                     }
                     testId={`voice-${voice}`}
                   >
-                    {voiceLabel[voice]}
+                    {t(`voice.${voice}`)}
                   </Chip>
                 ))}
               </ChipRow>
-              <ChipRow label="Язык">
+              <ChipRow label={t("lobby.filterLanguage")}>
                 <Chip
                   active={filters.language === null}
                   onClick={() => applyFilters({ ...filters, language: null })}
                   testId="lang-any"
                 >
-                  Любой
+                  {t("lobby.any")}
                 </Chip>
                 {LANGUAGES.map((lang) => (
                   <Chip
@@ -437,26 +480,48 @@ export function GameLobby({
                     }
                     testId={`lang-${lang}`}
                   >
-                    {languageLabel[lang]}
+                    {t(`lang.${lang}`)}
                   </Chip>
                 ))}
               </ChipRow>
             </div>
 
-            <button
-              type="button"
-              data-testid="more-filters"
-              onClick={() => setMoreFilters((value) => !value)}
-              className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline sm:hidden"
-            >
-              {moreFilters
-                ? "Скрыть фильтры"
-                : `Ещё · ${skillLabelFor(game.id, filters.skill)} · ${filters.hours.map((h) => hourLabel[h]).join(", ")}${
-                    filters.roleTag
-                      ? ` · ${roleOptionLabel(game.id, filters.roleTag) ?? ""}`
-                      : ""
-                  }`}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                data-testid="more-filters"
+                onClick={() => setMoreFilters((value) => !value)}
+                className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline sm:hidden"
+              >
+                {moreFilters
+                  ? t("lobby.hideFilters")
+                  : t("lobby.moreSummary", {
+                      summary: [
+                        skillLabelFor(game.id, filters.skill, locale),
+                        filters.hours.map((h) => t(`hour.${h}`)).join(", "),
+                        filters.roleTag
+                          ? roleOptionLabel(game.id, filters.roleTag, locale) ?? ""
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" · "),
+                    })}
+              </button>
+              {filtersDirty ? (
+                <button
+                  type="button"
+                  data-testid="clear-filters"
+                  title="Esc"
+                  onClick={clearFilters}
+                  className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline"
+                >
+                  {t("lobby.clearFilters")}
+                  <kbd className="ml-1.5 hidden rounded border border-white/15 px-1 py-0.5 font-mono text-[10px] text-white/35 sm:inline">
+                    Esc
+                  </kbd>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {loading ? <LoadingState /> : null}
@@ -465,7 +530,7 @@ export function GameLobby({
             <div className="rounded-2xl border border-red-400/25 bg-red-500/10 p-4">
               <p className="flex items-center gap-2 font-medium text-red-100">
                 <AlertCircle className="size-4" />
-                Лента недоступна
+                {t("lobby.feedErrorTitle")}
               </p>
               <p className="mt-1 text-sm text-red-100/70">{error}</p>
             </div>
@@ -474,17 +539,7 @@ export function GameLobby({
           {!loading && !error && result ? (
             result.players.length === 0 && result.parties.length === 0 ? (
               <EmptyLobby
-                onRelax={() =>
-                  applyFilters({
-                    ...filters,
-                    playStyle: playStyles.includes("casual") ? "casual" : playStyles[0],
-                    hours: ["evening", "night"],
-                    roleTag: null,
-                    region: null,
-                    voicePlatform: null,
-                    language: null,
-                  })
-                }
+                onRelax={clearFilters}
                 onPublish={() => void party.publishOpenParty()}
                 onLooking={() => void party.publishLooking()}
               />
@@ -498,18 +553,18 @@ export function GameLobby({
               >
                 <TabsList className="w-full sm:w-auto">
                   <TabsTrigger value="parties" data-testid="tab-parties">
-                    Сборы
+                    {t("lobby.tabParties")}
                     <Badge variant="secondary">{result.parties.length}</Badge>
                   </TabsTrigger>
                   <TabsTrigger value="players" data-testid="tab-players">
-                    Игроки
+                    {t("lobby.tabPlayers")}
                     <Badge variant="secondary">{result.players.length}</Badge>
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="parties" className="mt-4 space-y-3">
                   {result.parties.length === 0 ? (
                     <p className="text-sm text-white/50">
-                      Открытых сборов нет. Нажмите «Открыть сбор» в трее пати.
+                      {t("lobby.noParties")}
                     </p>
                   ) : (
                     result.parties.map((row) => (
@@ -529,7 +584,7 @@ export function GameLobby({
                       data-testid="recent-played"
                     >
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-[var(--brand)]">
-                        Недавно играли
+                        {t("lobby.recent")}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {recentPlayers.map((player) => (
@@ -555,7 +610,7 @@ export function GameLobby({
                   ) : null}
                   {result.players.length === 0 ? (
                     <p className="text-sm text-white/50">
-                      Соло-игроков нет — посмотрите вкладку сборов.
+                      {t("lobby.noPlayers")}
                     </p>
                   ) : (
                     result.players.map((row) => (
@@ -620,9 +675,10 @@ function Chip({
 }
 
 function LoadingState() {
+  const t = useT();
   return (
     <div className="space-y-3" aria-live="polite" aria-busy="true">
-      <p className="text-sm text-white/50">Обновляем ленту по фильтрам…</p>
+      <p className="text-sm text-white/50">{t("lobby.loading")}</p>
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
           <Skeleton className="h-5 w-40" />
@@ -642,21 +698,22 @@ function EmptyLobby({
   onPublish: () => void;
   onLooking: () => void;
 }) {
+  const t = useT();
   return (
     <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-6">
-      <p className="font-display text-xl text-white">Сейчас тихо</p>
+      <p className="font-display text-xl text-white">{t("lobby.emptyTitle")}</p>
       <p className="mt-2 max-w-lg text-sm leading-6 text-white/55">
-        Под эти чипы пока пусто. Выставьте себя в ленту, откройте сбор или ослабьте фильтры.
+        {t("lobby.emptyBody")}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="button" data-testid="empty-looking" onClick={onLooking}>
-          Я ищу
+          {t("lobby.emptyLooking")}
         </Button>
         <Button type="button" data-testid="empty-publish" onClick={onPublish}>
-          Открыть сбор
+          {t("lobby.emptyPublish")}
         </Button>
-        <Button type="button" variant="outline" onClick={onRelax}>
-          Ослабить фильтры
+        <Button type="button" variant="outline" data-testid="empty-relax" onClick={onRelax}>
+          {t("lobby.emptyRelax")}
         </Button>
       </div>
     </div>
@@ -676,6 +733,8 @@ function PlayerCard({
   onInvite: () => void;
   onBlocked?: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const account = loadAccount();
   const { player, reasons } = row;
   const pid = personIdOf(player);
@@ -696,10 +755,10 @@ function PlayerCard({
             {player.online ? (
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-200">
                 <Wifi className="size-3" />
-                Онлайн
+                {t("lobby.online")}
               </span>
             ) : (
-              <span className="text-[11px] text-white/40">Офлайн</span>
+              <span className="text-[11px] text-white/40">{t("lobby.offline")}</span>
             )}
             <ProfileLinks
               steamProfileUrl={player.steamProfileUrl}
@@ -710,13 +769,13 @@ function PlayerCard({
             />
           </h3>
           <p className="mt-1 text-sm text-white/50">
-            {player.role} · {skillLabelFor(player.gameId, player.skill)}
-            {player.region ? ` · ${regionLabel[player.region]}` : ""}
-            {player.language ? ` · ${languageLabel[player.language]}` : ""}
+            {player.role} · {skillLabelFor(player.gameId, player.skill, locale)}
+            {player.region ? ` · ${t(`region.${player.region}`)}` : ""}
+            {player.language ? ` · ${t(`lang.${player.language}`)}` : ""}
           </p>
           {otherGamesFor(player).length > 0 ? (
             <p className="mt-1 text-[11px] text-white/40">
-              Ещё играет:{" "}
+              {t("lobby.alsoPlays")}{" "}
               {otherGamesFor(player)
                 .map((id) => games.find((item) => item.id === id)?.name ?? id)
                 .join(", ")}
@@ -725,7 +784,7 @@ function PlayerCard({
         </div>
         {isYou ? (
           <span className="rounded-md bg-[var(--brand)]/15 px-2 py-1 text-xs text-[var(--brand)]">
-            это вы
+            {t("lobby.thisIsYou")}
           </span>
         ) : (
           <div className="flex flex-col items-end gap-1.5">
@@ -737,7 +796,7 @@ function PlayerCard({
               onClick={onInvite}
             >
               <UserPlus data-icon="inline-start" />
-              {invited ? "В пати" : "Пригласить"}
+              {invited ? t("lobby.inParty") : t("lobby.invite")}
             </Button>
             <button
               type="button"
@@ -745,11 +804,11 @@ function PlayerCard({
               className="text-[11px] text-white/35 transition hover:text-white/70"
               onClick={() => {
                 blockPerson(pid, player.name);
-                toast.success(`${player.name} скрыт из ленты`);
+                toast.success(t("toast.hidden", { name: player.name }));
                 onBlocked?.();
               }}
             >
-              Скрыть
+              {t("lobby.hide")}
             </button>
           </div>
         )}
@@ -757,18 +816,18 @@ function PlayerCard({
       <p className="mt-3 text-sm text-white/60">{proof[0]}</p>
       {proof[1] ? <p className="mt-1 text-xs text-white/40">{proof[1]}</p> : null}
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-white/40">
-        <span>{formatHours(player.hours)}</span>
+        <span>{player.hours.map((h) => t(`hour.${h}`)).join(" · ")}</span>
         {player.mic ? (
           <span className="inline-flex items-center gap-1">
-            <Mic className="size-3" /> микро
+            <Mic className="size-3" /> {t("lobby.micOn")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1">
-            <MicOff className="size-3" /> без микро
+            <MicOff className="size-3" /> {t("lobby.micOff")}
           </span>
         )}
         {player.voicePlatform ? (
-          <span>{voiceLabel[player.voicePlatform]}</span>
+          <span>{t(`voice.${player.voicePlatform}`)}</span>
         ) : null}
       </div>
     </article>
@@ -784,6 +843,8 @@ function PartyCard({
   joined: boolean;
   onJoin: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const { party, reasons } = row;
   const open = party.partySize - party.filled;
 
@@ -795,10 +856,10 @@ function PartyCard({
         text: party.note,
         url,
       });
-      if (mode === "copied") toast.success("Ссылка на сбор скопирована");
+      if (mode === "copied") toast.success(t("toast.openPartyLinkCopied"));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      toast.error("Не удалось поделиться");
+      toast.error(t("toast.shareFailShort"));
     }
   }
 
@@ -808,13 +869,13 @@ function PartyCard({
         <div>
           <h3 className="text-base font-medium text-white">{party.name}</h3>
           <p className="mt-1 text-sm text-white/50">
-            {party.leader} · {playStyleLabel[party.playStyle]} ·{" "}
-            {skillLabelFor(party.gameId, party.skill)}
+            {party.leader} · {t(`style.${party.playStyle}`)} ·{" "}
+            {skillLabelFor(party.gameId, party.skill, locale)}
           </p>
         </div>
         <span className="inline-flex items-center gap-1 rounded-md bg-[var(--game-accent,var(--brand))]/15 px-2 py-1 text-xs text-white/90">
           <Users className="size-3" />
-          свободно {open}
+          {t("lobby.freeSlots", { n: open })}
         </span>
       </div>
       {party.startsAt ? (
@@ -829,9 +890,9 @@ function PartyCard({
           {party.filled}/{party.partySize}
         </span>
         <span>{reasons[0]}</span>
-        {party.region ? <span>{regionLabel[party.region]}</span> : null}
-        {party.voicePlatform ? <span>{voiceLabel[party.voicePlatform]}</span> : null}
-        {party.language ? <span>{languageLabel[party.language]}</span> : null}
+        {party.region ? <span>{t(`region.${party.region}`)}</span> : null}
+        {party.voicePlatform ? <span>{t(`voice.${party.voicePlatform}`)}</span> : null}
+        {party.language ? <span>{t(`lang.${party.language}`)}</span> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
@@ -841,7 +902,7 @@ function PartyCard({
           disabled={joined || open <= 0}
           onClick={onJoin}
         >
-          {joined ? "Вы уже внутри" : open <= 0 ? "Мест нет" : "Вступить"}
+          {joined ? t("lobby.alreadyInside") : open <= 0 ? t("lobby.noSlots") : t("lobby.join")}
         </Button>
         <Button
           type="button"
@@ -852,7 +913,7 @@ function PartyCard({
           data-testid="copy-open-party-link"
         >
           <Link2 data-icon="inline-start" />
-          Ссылка
+          {t("lobby.link")}
         </Button>
       </div>
     </article>
@@ -861,6 +922,7 @@ function PartyCard({
 
 export function PartyDeepLink({ party }: { party: OpenParty }) {
   const ctx = useParty();
+  const t = useT();
 
   useEffect(() => {
     const timer = window.setTimeout(() => ctx.applyOpenParty(party), 0);
@@ -871,14 +933,17 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
     <SiteChrome>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
         <Link href={`/g/${party.gameId}`} className="text-xs text-white/50 hover:text-white/80">
-          ← К лобби
+          {t("deep.backLobby")}
         </Link>
         <div className="animate-fade-up rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Открытый сбор</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("deep.openGathering")}</p>
           <h1 className="mt-2 font-display text-3xl text-white sm:text-4xl">{party.name}</h1>
           <p className="mt-3 text-sm text-white/60">
-            {party.leader} · {playStyleLabel[party.playStyle]} · свободно{" "}
-            {party.partySize - party.filled} из {party.partySize}
+            {party.leader} · {t(`style.${party.playStyle}`)} ·{" "}
+            {t("deep.freeOf", {
+              free: party.partySize - party.filled,
+              total: party.partySize,
+            })}
           </p>
           <p className="mt-4 text-sm leading-6 text-white/70">{party.note}</p>
           <div className="mt-6 flex flex-wrap gap-2">
@@ -889,13 +954,13 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
               disabled={ctx.joinedParty?.id === party.id}
               onClick={() => ctx.joinParty(party)}
             >
-              Залетать в сбор
+              {t("deep.join")}
             </Button>
             <Link
               href={`/g/${party.gameId}`}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white transition hover:bg-white/10"
             >
-              Открыть лобби
+              {t("deep.openLobby")}
             </Link>
           </div>
         </div>
@@ -907,6 +972,7 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
 
 export function JoinDeepLink({ code }: { code: string }) {
   const ctx = useParty();
+  const t = useT();
   const [status, setStatus] = useState<"loading" | "ok" | "missing">("loading");
 
   useEffect(() => {
@@ -928,26 +994,30 @@ export function JoinDeepLink({ code }: { code: string }) {
     <SiteChrome>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
         <Link href="/" className="text-xs text-white/50 hover:text-white/80">
-          ← Каталог
+          {t("lobby.catalogShort")}
         </Link>
         <div className="animate-fade-up rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Приглашение в пати</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("deep.inviteTitle")}</p>
           <h1 className="mt-2 font-display text-3xl text-white sm:text-4xl">
-            Код {code.toUpperCase()}
+            {t("deep.code", { code: code.toUpperCase() })}
           </h1>
           <p className="mt-3 text-sm text-white/60" data-testid="join-status">
             {status === "loading"
-              ? "Загружаем пати по коду…"
+              ? t("deep.loadingCode")
               : status === "missing"
-                ? "Пати с таким кодом не найдена. Попросите хоста открыть сбор или обновить ссылку."
-                : `Вы в контексте пати «${ctx.partyName}». Слоты: ${ctx.filledCount}/${ctx.seats.length}.`}
+                ? t("deep.missingLong")
+                : t("deep.inContext", {
+                    name: ctx.partyName,
+                    filled: ctx.filledCount,
+                    total: ctx.seats.length,
+                  })}
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
               href={ctx.gameId ? `/g/${ctx.gameId}` : "/g/valorant"}
               className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/80"
             >
-              Перейти в лобби
+              {t("deep.goLobby")}
             </Link>
             <Button
               type="button"
@@ -956,7 +1026,7 @@ export function JoinDeepLink({ code }: { code: string }) {
               data-testid="copy-party-link-join"
               onClick={() => void ctx.copyShareLink()}
             >
-              Скопировать ссылку на пати
+              {t("deep.copyPartyLink")}
             </Button>
           </div>
         </div>
