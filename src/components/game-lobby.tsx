@@ -18,6 +18,7 @@ import {
 } from "@/lib/game-fields";
 import { useLocale, useT } from "@/lib/i18n/context";
 import {
+  defaultLobbyFilters,
   filtersToCriteria,
   lobbyHref,
   parseLobbySearchParams,
@@ -122,28 +123,19 @@ export function GameLobby({
     router.replace(lobbyHref(game.id, next, game), { scroll: false });
   }
 
-  const defaultPlayStyle = playStyles.includes("casual") ? "casual" : playStyles[0];
+  const defaults = useMemo(() => defaultLobbyFilters(game), [game]);
   const filtersDirty =
-    filters.playStyle !== defaultPlayStyle ||
-    filters.partySize !== game.partySizes[0] ||
-    filters.skill !== 3 ||
-    filters.hours.join() !== "evening,night" ||
-    filters.roleTag !== null ||
-    filters.region !== null ||
-    filters.voicePlatform !== null ||
-    filters.language !== null;
+    filters.playStyle !== defaults.playStyle ||
+    filters.partySize !== defaults.partySize ||
+    filters.skill !== defaults.skill ||
+    filters.hours.join() !== defaults.hours.join() ||
+    filters.roleTag !== defaults.roleTag ||
+    filters.region !== defaults.region ||
+    filters.voicePlatform !== defaults.voicePlatform ||
+    filters.language !== defaults.language;
 
   function clearFilters() {
-    applyFilters({
-      playStyle: defaultPlayStyle,
-      partySize: game.partySizes[0],
-      skill: 3,
-      hours: ["evening", "night"],
-      roleTag: null,
-      region: null,
-      voicePlatform: null,
-      language: null,
-    });
+    applyFilters({ ...defaults });
   }
 
   useEffect(() => {
