@@ -1,5 +1,6 @@
 "use client";
 
+import { CoverImage } from "@/components/cover-image";
 import { PartyTray } from "@/components/party-tray";
 import { useJoinCodeBootstrap, useParty } from "@/components/party-context";
 import { SiteChrome } from "@/components/site-chrome";
@@ -8,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { catalogGames } from "@/lib/catalog";
+import {
+  filtersToCriteria,
+  lobbyFiltersToParams,
+  parseLobbySearchParams,
+  type LobbyFilters,
+} from "@/lib/lobby-url";
 import {
   formatHours,
   hourLabel,
@@ -18,7 +25,6 @@ import {
 import type {
   Game,
   HourWindow,
-  MatchCriteria,
   MatchResult,
   OpenParty,
   PlayStyle,
@@ -35,6 +41,7 @@ import {
   Wifi,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -48,23 +55,28 @@ type FeedState = {
   result: MatchResult | null;
 };
 
-function criteriaKey(criteria: MatchCriteria) {
-  return JSON.stringify(criteria);
+function criteriaKey(filters: LobbyFilters, gameId: string, feedNonce: number) {
+  return JSON.stringify({ filters, gameId, feedNonce });
 }
 
 export function GameLobby({ game }: { game: Game }) {
   const party = useParty();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const syncedRef = useRef<string>("");
+
   const catalog = useMemo(
     () => catalogGames().find((item) => item.id === game.id),
     [game.id],
   );
 
-  const [playStyle, setPlayStyle] = useState<PlayStyle>("ranked");
-  const [partySize, setPartySize] = useState(game.partySizes.includes(5) ? 5 : game.partySizes[0]);
-  const [skill, setSkill] = useState<SkillLevel>(4);
-  const [selectedHours, setSelectedHours] = useState<HourWindow[]>(["evening"]);
+  const filters = useMemo(
+    () => parseLobbySearchParams(game, new URLSearchParams(searchParams.toString())),
+    [game, searchParams],
+  );
   const [tab, setTab] = useState("parties");
+  const [extraOpen, setExtraOpen] = useState(0);
   const [feed, setFeed] = useState<FeedState>({
     key: "",
     loading: true,
@@ -72,28 +84,37 @@ export function GameLobby({ game }: { game: Game }) {
     result: null,
   });
 
-  const criteria: MatchCriteria = useMemo(
-    () => ({
-      gameId: game.id,
-      playStyle,
-      partySize,
-      skill,
-      hours: selectedHours.length ? selectedHours : ["evening"],
-    }),
-    [game.id, playStyle, partySize, skill, selectedHours],
+  function applyFilters(next: LobbyFilters) {
+    const params = lobbyFiltersToParams(next, game);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
+  const criteria = useMemo(
+    () => filtersToCriteria(game.id, filters),
+    [game.id, filters],
   );
-  const key = criteriaKey(criteria);
+  const key = criteriaKey(filters, game.id, party.feedNonce);
   const loading = feed.loading || feed.key !== key;
 
+  const setLobbyMeta = party.setLobbyMeta;
   useEffect(() => {
-    const syncKey = `${game.id}:${partySize}`;
+    setLobbyMeta({
+      playStyle: filters.playStyle,
+      skill: filters.skill,
+      hours: filters.hours,
+    });
+  }, [filters.playStyle, filters.skill, filters.hours, setLobbyMeta]);
+
+  useEffect(() => {
+    const syncKey = `${game.id}:${filters.partySize}`;
     if (syncedRef.current === syncKey) return;
     const timer = window.setTimeout(() => {
-      party.ensurePartyForGame(game.id, partySize);
+      party.ensurePartyForGame(game.id, filters.partySize);
       syncedRef.current = syncKey;
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [game.id, partySize, party]);
+  }, [game.id, filters.partySize, party]);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,27 +160,46 @@ export function GameLobby({ game }: { game: Game }) {
   }, [criteria, key]);
 
   async function shareLobby() {
-    const url = `${window.location.origin}/g/${game.id}`;
+    const params = lobbyFiltersToParams(filters, game);
+    const qs = params.toString();
+    const url = `${window.location.origin}/g/${game.id}${qs ? `?${qs}` : ""}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Ссылка на лобби скопирована");
+      toast.success("Ссылка на лобби с фильтрами скопирована");
     } catch {
       toast.error("Не удалось скопировать ссылку");
     }
   }
 
   function toggleHour(hour: HourWindow) {
-    setSelectedHours((current) => {
-      if (current.includes(hour)) {
-        if (current.length === 1) return current;
-        return current.filter((item) => item !== hour);
-      }
-      return [...current, hour];
-    });
+    const current = filters.hours;
+    let nextHours: HourWindow[];
+    if (current.includes(hour)) {
+      if (current.length === 1) return;
+      nextHours = current.filter((item) => item !== hour);
+    } else {
+      nextHours = [...current, hour];
+    }
+    applyFilters({ ...filters, hours: nextHours });
   }
 
   const result = feed.key === key ? feed.result : null;
   const error = feed.key === key ? feed.error : null;
+  const openCount = (catalog?.openParties ?? 0) + extraOpen;
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/parties?counts=1")
+      .then((res) => res.json())
+      .then((data: { counts?: Record<string, number> }) => {
+        if (cancelled) return;
+        setExtraOpen(data.counts?.[game.id] ?? 0);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [game.id, party.feedNonce]);
 
   return (
     <SiteChrome subtle>
@@ -168,10 +208,8 @@ export function GameLobby({ game }: { game: Game }) {
         style={{ ["--game-accent" as string]: game.accent }}
       >
         <div className="absolute inset-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/covers/${game.id}.svg`}
-            alt=""
+          <CoverImage
+            gameId={game.id}
             className="h-full w-full object-cover opacity-55"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0d] via-[#0b0b0d]/85 to-[#0b0b0d]/40" />
@@ -188,7 +226,7 @@ export function GameLobby({ game }: { game: Game }) {
                 {game.name}
               </p>
               <p className="mt-3 text-sm text-white/65 sm:text-base">
-                {catalog?.looking ?? 0} ищут · {catalog?.openParties ?? 0} открытых сборов ·{" "}
+                {catalog?.looking ?? 0} ищут · {openCount} открытых сборов ·{" "}
                 {catalog?.onlineNow ?? 0} онлайн
               </p>
             </div>
@@ -214,8 +252,8 @@ export function GameLobby({ game }: { game: Game }) {
               {playStyles.map((style) => (
                 <Chip
                   key={style}
-                  active={playStyle === style}
-                  onClick={() => setPlayStyle(style)}
+                  active={filters.playStyle === style}
+                  onClick={() => applyFilters({ ...filters, playStyle: style })}
                   testId={`style-${style}`}
                 >
                   {playStyleLabel[style]}
@@ -226,8 +264,8 @@ export function GameLobby({ game }: { game: Game }) {
               {game.partySizes.map((size) => (
                 <Chip
                   key={size}
-                  active={partySize === size}
-                  onClick={() => setPartySize(size)}
+                  active={filters.partySize === size}
+                  onClick={() => applyFilters({ ...filters, partySize: size })}
                   testId={`size-${size}`}
                 >
                   {partySizeLabel[size] ?? `${size}`}
@@ -238,8 +276,8 @@ export function GameLobby({ game }: { game: Game }) {
               {([1, 2, 3, 4, 5] as SkillLevel[]).map((level) => (
                 <Chip
                   key={level}
-                  active={skill === level}
-                  onClick={() => setSkill(level)}
+                  active={filters.skill === level}
+                  onClick={() => applyFilters({ ...filters, skill: level })}
                   testId={`skill-${level}`}
                 >
                   {skillLabel[level]}
@@ -250,7 +288,7 @@ export function GameLobby({ game }: { game: Game }) {
               {hours.map((hour) => (
                 <Chip
                   key={hour}
-                  active={selectedHours.includes(hour)}
+                  active={filters.hours.includes(hour)}
                   onClick={() => toggleHour(hour)}
                   testId={`hour-${hour}`}
                 >
@@ -275,10 +313,14 @@ export function GameLobby({ game }: { game: Game }) {
           {!loading && !error && result ? (
             result.players.length === 0 && result.parties.length === 0 ? (
               <EmptyLobby
-                onRelax={() => {
-                  setPlayStyle("casual");
-                  setSelectedHours(["evening", "night"]);
-                }}
+                onRelax={() =>
+                  applyFilters({
+                    ...filters,
+                    playStyle: "casual",
+                    hours: ["evening", "night"],
+                  })
+                }
+                onPublish={() => void party.publishOpenParty()}
               />
             ) : (
               <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
@@ -295,7 +337,7 @@ export function GameLobby({ game }: { game: Game }) {
                 <TabsContent value="parties" className="mt-4 space-y-3">
                   {result.parties.length === 0 ? (
                     <p className="text-sm text-white/50">
-                      Открытых сборов нет. Соберите пати из игроков или создайте свой.
+                      Открытых сборов нет. Нажмите «Открыть сбор» в трее пати.
                     </p>
                   ) : (
                     result.parties.map((row) => (
@@ -388,15 +430,24 @@ function LoadingState() {
   );
 }
 
-function EmptyLobby({ onRelax }: { onRelax: () => void }) {
+function EmptyLobby({
+  onRelax,
+  onPublish,
+}: {
+  onRelax: () => void;
+  onPublish: () => void;
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-6">
       <p className="font-display text-xl text-white">Сейчас тихо</p>
       <p className="mt-2 max-w-lg text-sm leading-6 text-white/55">
-        Под эти чипы никто не ищет. Создайте свой сбор и киньте ссылку друзьям — или ослабьте фильтры.
+        Под эти чипы никто не ищет. Откройте свой сбор в ленте или ослабьте фильтры.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="button" onClick={onRelax}>
+        <Button type="button" data-testid="empty-publish" onClick={onPublish}>
+          Открыть сбор
+        </Button>
+        <Button type="button" variant="outline" onClick={onRelax}>
           Ослабить фильтры
         </Button>
       </div>
@@ -430,9 +481,6 @@ function PlayerCard({
             ) : (
               <span className="text-[11px] text-white/40">Офлайн</span>
             )}
-            <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[11px] text-white/45">
-              {score}%
-            </span>
           </h3>
           <p className="mt-1 text-sm text-white/50">
             {player.role} · {skillLabel[player.skill]}
@@ -450,7 +498,7 @@ function PlayerCard({
         </Button>
       </div>
       <p className="mt-3 text-sm text-white/60">{reasons[0]}</p>
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-white/40">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-white/40">
         <span>{formatHours(player.hours)}</span>
         {player.mic ? (
           <span className="inline-flex items-center gap-1">
@@ -461,6 +509,9 @@ function PlayerCard({
             <MicOff className="size-3" /> без микро
           </span>
         )}
+        <span className="ml-auto text-white/30" title="Сортировка по совпадению">
+          {score}%
+        </span>
       </div>
     </article>
   );
@@ -475,7 +526,7 @@ function PartyCard({
   joined: boolean;
   onJoin: () => void;
 }) {
-  const { party, score, reasons } = row;
+  const { party, reasons } = row;
   const open = party.partySize - party.filled;
 
   async function copyPartyLink() {
@@ -497,17 +548,17 @@ function PartyCard({
             {party.leader} · {playStyleLabel[party.playStyle]} · {skillLabel[party.skill]}
           </p>
         </div>
-        <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[11px] text-white/45">
-          {score}%
+        <span className="inline-flex items-center gap-1 rounded-md bg-[var(--game-accent,var(--brand))]/15 px-2 py-1 text-xs text-white/90">
+          <Users className="size-3" />
+          свободно {open}
         </span>
       </div>
       <p className="mt-3 text-sm text-white/65">{party.note}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-md bg-[var(--game-accent,var(--brand))]/15 px-2 py-1 text-xs text-white/85">
-          <Users className="size-3" />
-          {party.filled}/{party.partySize}, свободно {open}
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/40">
+        <span>
+          {party.filled}/{party.partySize}
         </span>
-        <span className="text-xs text-white/40">{reasons[0]}</span>
+        <span>{reasons[0]}</span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="button" size="lg" data-testid="join-party" disabled={joined} onClick={onJoin}>
@@ -590,7 +641,9 @@ export function JoinDeepLink({ code }: { code: string }) {
             Код {code.toUpperCase()}
           </h1>
           <p className="mt-3 text-sm text-white/60">
-            Вы в контексте пати «{ctx.partyName}». Слоты: {ctx.filledCount}/{ctx.seats.length}.
+            {ctx.gameId
+              ? `Вы в контексте пати «${ctx.partyName}». Слоты: ${ctx.filledCount}/${ctx.seats.length}.`
+              : "Загружаем пати по коду…"}
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link

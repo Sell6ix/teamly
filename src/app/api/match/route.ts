@@ -1,5 +1,6 @@
 import { gameById, matchPeople } from "@/lib/matching";
-import type { HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "@/lib/types";
+import { listPublishedParties } from "@/lib/party-store";
+import type { GameId, HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 const PLAY_STYLES: PlayStyle[] = ["casual", "ranked", "learning", "voice", "speedrun"];
@@ -67,5 +68,6 @@ export async function POST(request: Request) {
     hours,
   };
 
-  return NextResponse.json(matchPeople(criteria));
+  const published = listPublishedParties(criteria.gameId as GameId);
+  return NextResponse.json(matchPeople(criteria, published));
 }

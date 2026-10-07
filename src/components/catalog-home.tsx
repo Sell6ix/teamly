@@ -1,8 +1,9 @@
 "use client";
 
+import { CoverImage } from "@/components/cover-image";
 import { SiteChrome } from "@/components/site-chrome";
 import { catalogGames } from "@/lib/catalog";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 const genreFilters = ["Все", "Шутер", "MOBA", "Кооп", "Хоррор"] as const;
@@ -17,9 +18,28 @@ function matchesGenre(genre: string, filter: string) {
 }
 
 export function CatalogHome() {
-  const games = useMemo(() => catalogGames(), []);
+  const baseGames = useMemo(() => catalogGames(), []);
+  const [extraCounts, setExtraCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState<(typeof genreFilters)[number]>("Все");
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/parties?counts=1")
+      .then((res) => res.json())
+      .then((data: { counts?: Record<string, number> }) => {
+        if (!cancelled) setExtraCounts(data.counts ?? {});
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const games = baseGames.map((game) => ({
+    ...game,
+    openParties: game.openParties + (extraCounts[game.id] ?? 0),
+  }));
 
   const filtered = games.filter((game) => {
     const q = query.trim().toLowerCase();
@@ -83,11 +103,9 @@ export function CatalogHome() {
               className="group relative animate-fade-up overflow-hidden rounded-xl outline-none ring-offset-2 ring-offset-[#0b0b0d] transition duration-300 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
               style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
             >
-              <div className="relative aspect-[3/4] overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/covers/${game.id}.svg`}
-                  alt=""
+              <div className="relative aspect-[3/4] overflow-hidden bg-[#161618]">
+                <CoverImage
+                  gameId={game.id}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />

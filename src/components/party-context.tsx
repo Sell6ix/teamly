@@ -1,18 +1,33 @@
 "use client";
 
 import { YOU_NAME } from "@/lib/data";
-import type { GameId, OpenParty, Player } from "@/lib/types";
+import type { JoinSession, StoredSeat } from "@/lib/party-store";
+import type {
+  GameId,
+  HourWindow,
+  OpenParty,
+  PlayStyle,
+  Player,
+  SkillLevel,
+} from "@/lib/types";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
 } from "react";
 import { toast } from "sonner";
 
 export type Seat = { kind: "you" } | { kind: "player"; player: Player } | { kind: "empty" };
+
+type LobbyMeta = {
+  playStyle: PlayStyle;
+  skill: SkillLevel;
+  hours: HourWindow[];
+};
 
 type PartySnapshot = {
   joinCode: string;
@@ -21,6 +36,9 @@ type PartySnapshot = {
   joinedParty: OpenParty | null;
   ready: boolean;
   gameId: GameId | null;
+  published: boolean;
+  lobbyMeta: LobbyMeta;
+  feedNonce: number;
 };
 
 type PartyContextValue = {
@@ -30,23 +48,28 @@ type PartyContextValue = {
   joinedParty: OpenParty | null;
   ready: boolean;
   gameId: GameId | null;
+  published: boolean;
+  feedNonce: number;
   filledCount: number;
   invitedIds: Set<string>;
   partyFull: boolean;
   setPartyName: (name: string) => void;
+  setLobbyMeta: (meta: LobbyMeta) => void;
   ensurePartyForGame: (gameId: GameId, size: number) => void;
   invite: (player: Player) => void;
   kick: (playerId: string) => void;
   joinParty: (party: OpenParty) => void;
   leaveJoined: () => void;
   setReady: (ready: boolean) => void;
-  loadJoinCode: (code: string) => boolean;
+  loadJoinCode: (code: string) => Promise<boolean>;
   applyOpenParty: (party: OpenParty, autoJoin?: boolean) => void;
+  publishOpenParty: () => Promise<OpenParty | null>;
   shareUrl: string;
   copyShareLink: () => Promise<void>;
+  bumpFeed: () => void;
 };
 
-const STORAGE_KEY = "teamly-party-v1";
+const STORAGE_KEY = "teamly-party-v2";
 const PartyContext = createContext<PartyContextValue | null>(null);
 
 function makeSeats(size: number, invited: Player[] = []): Seat[] {
@@ -67,12 +90,15 @@ function makeJoinCode() {
 
 function defaultSnapshot(): PartySnapshot {
   return {
-    joinCode: "DEMO1",
+    joinCode: makeJoinCode(),
     partyName: `Пати ${YOU_NAME}`,
     seats: makeSeats(5),
     joinedParty: null,
     ready: false,
     gameId: null,
+    published: false,
+    lobbyMeta: { playStyle: "ranked", skill: 4, hours: ["evening"] },
+    feedNonce: 0,
   };
 }
 
@@ -94,8 +120,14 @@ function ensureClientSnapshot(): PartySnapshot {
   if (clientSnapshot) return clientSnapshot;
   const saved = deserialize(sessionStorage.getItem(STORAGE_KEY));
   clientSnapshot = saved
-    ? { ...saved, joinCode: saved.joinCode || makeJoinCode() }
-    : { ...defaultSnapshot(), joinCode: makeJoinCode() };
+    ? {
+        ...defaultSnapshot(),
+        ...saved,
+        joinCode: saved.joinCode || makeJoinCode(),
+        lobbyMeta: saved.lobbyMeta ?? defaultSnapshot().lobbyMeta,
+        feedNonce: 0,
+      }
+    : defaultSnapshot();
   return clientSnapshot;
 }
 
@@ -119,12 +151,89 @@ function writeSnapshot(next: PartySnapshot) {
   listeners.forEach((listener) => listener());
 }
 
+function seatsToStored(seats: Seat[]): StoredSeat[] {
+  return seats.map((seat) => {
+    if (seat.kind === "you") return { kind: "you", name: YOU_NAME, role: "Хост" };
+    if (seat.kind === "player") {
+      return { kind: "player", name: seat.player.name, role: seat.player.role };
+    }
+    return { kind: "empty", name: "", role: "" };
+  });
+}
+
+function sessionToSeats(session: JoinSession): Seat[] {
+  const invited: Player[] = session.seats
+    .filter((seat) => seat.kind === "player")
+    .map((seat, index) => ({
+      id: `remote-${session.code}-${index}`,
+      name: seat.name,
+      gameId: session.gameId,
+      playStyles: [session.playStyle],
+      skill: session.skill,
+      hours: session.hours,
+      lookingForSize: session.partySize,
+      role: seat.role || "В пати",
+      mic: session.micRequired,
+      online: true,
+      bio: session.note,
+      timezone: "МСК",
+    }));
+  return makeSeats(session.partySize, invited);
+}
+
+async function syncJoinToServer(snapshot: PartySnapshot) {
+  if (!snapshot.gameId) return;
+  try {
+    await fetch("/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: snapshot.joinCode,
+        partyName: snapshot.partyName,
+        gameId: snapshot.gameId,
+        partySize: snapshot.seats.length,
+        playStyle: snapshot.lobbyMeta.playStyle,
+        skill: snapshot.lobbyMeta.skill,
+        hours: snapshot.lobbyMeta.hours,
+        seats: seatsToStored(snapshot.seats),
+        filled: snapshot.seats.filter((seat) => seat.kind !== "empty").length,
+        published: snapshot.published,
+        note: snapshot.joinedParty?.note ?? "",
+        micRequired: true,
+        leader: YOU_NAME,
+        ready: snapshot.ready,
+      }),
+    });
+  } catch {
+    // offline demo: local tray still works
+  }
+}
+
 export function PartyProvider({ children }: { children: React.ReactNode }) {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const syncTimer = useRef<number | null>(null);
 
-  const update = useCallback((patch: Partial<PartySnapshot>) => {
-    writeSnapshot({ ...ensureClientSnapshot(), ...patch });
+  const scheduleSync = useCallback((next: PartySnapshot) => {
+    if (syncTimer.current) window.clearTimeout(syncTimer.current);
+    syncTimer.current = window.setTimeout(() => {
+      void syncJoinToServer(next);
+    }, 200);
   }, []);
+
+  const commit = useCallback(
+    (next: PartySnapshot) => {
+      writeSnapshot(next);
+      scheduleSync(next);
+    },
+    [scheduleSync],
+  );
+
+  const update = useCallback(
+    (patch: Partial<PartySnapshot>) => {
+      commit({ ...ensureClientSnapshot(), ...patch });
+    },
+    [commit],
+  );
 
   const invitedIds = useMemo(
     () =>
@@ -139,131 +248,223 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
   const filledCount = snapshot.seats.filter((seat) => seat.kind !== "empty").length;
   const partyFull = filledCount >= snapshot.seats.length;
 
-  const ensurePartyForGame = useCallback((nextGameId: GameId, size: number) => {
-    const current = ensureClientSnapshot();
-    if (current.gameId !== nextGameId) {
-      writeSnapshot({
-        joinCode: makeJoinCode(),
-        partyName: `Пати ${YOU_NAME}`,
-        seats: makeSeats(size),
-        joinedParty: null,
+  const ensurePartyForGame = useCallback(
+    (nextGameId: GameId, size: number) => {
+      const current = ensureClientSnapshot();
+      if (current.gameId !== nextGameId) {
+        commit({
+          ...current,
+          joinCode: makeJoinCode(),
+          partyName: `Пати ${YOU_NAME}`,
+          seats: makeSeats(size),
+          joinedParty: null,
+          ready: false,
+          gameId: nextGameId,
+          published: false,
+        });
+        return;
+      }
+      if (current.seats.length !== size && !current.joinedParty) {
+        commit({ ...current, seats: makeSeats(size), published: false });
+      }
+    },
+    [commit],
+  );
+
+  const invite = useCallback(
+    (player: Player) => {
+      const current = ensureClientSnapshot();
+      if (current.joinedParty) {
+        toast.error("Вы уже в чужом сборе. Выйдите, чтобы собрать свою пати.");
+        return;
+      }
+      if (current.seats.some((seat) => seat.kind === "player" && seat.player.id === player.id)) {
+        return;
+      }
+      const emptyIndex = current.seats.findIndex((seat) => seat.kind === "empty");
+      if (emptyIndex === -1) {
+        toast.error("Пати уже полная.");
+        return;
+      }
+      const seats = [...current.seats];
+      seats[emptyIndex] = { kind: "player", player };
+      commit({ ...current, seats });
+      toast.success(`${player.name} в пати`, { duration: 1800 });
+    },
+    [commit],
+  );
+
+  const kick = useCallback(
+    (playerId: string) => {
+      const current = ensureClientSnapshot();
+      commit({
+        ...current,
         ready: false,
-        gameId: nextGameId,
+        seats: current.seats.map((seat) =>
+          seat.kind === "player" && seat.player.id === playerId ? { kind: "empty" } : seat,
+        ),
       });
-      return;
-    }
-    if (current.seats.length !== size && !current.joinedParty) {
-      writeSnapshot({ ...current, seats: makeSeats(size) });
-    }
-  }, []);
+    },
+    [commit],
+  );
 
-  const invite = useCallback((player: Player) => {
-    const current = ensureClientSnapshot();
-    if (current.joinedParty) {
-      toast.error("Вы уже в чужом сборе. Выйдите, чтобы собрать свою пати.");
-      return;
-    }
-    if (current.seats.some((seat) => seat.kind === "player" && seat.player.id === player.id)) {
-      return;
-    }
-    const emptyIndex = current.seats.findIndex((seat) => seat.kind === "empty");
-    if (emptyIndex === -1) {
-      toast.error("Пати уже полная.");
-      return;
-    }
-    const seats = [...current.seats];
-    seats[emptyIndex] = { kind: "player", player };
-    writeSnapshot({ ...current, seats });
-    toast.success(`${player.name} в пати`, { duration: 1800 });
-  }, []);
-
-  const kick = useCallback((playerId: string) => {
-    const current = ensureClientSnapshot();
-    writeSnapshot({
-      ...current,
-      ready: false,
-      seats: current.seats.map((seat) =>
-        seat.kind === "player" && seat.player.id === playerId ? { kind: "empty" } : seat,
-      ),
-    });
-  }, []);
-
-  const joinParty = useCallback((party: OpenParty) => {
-    if (party.filled >= party.partySize) return;
-    const placeholders: Player[] = Array.from({ length: party.filled }, (_, index) => ({
-      id: `slot-${party.id}-${index}`,
-      name: index === 0 ? party.leader : `Игрок ${index + 1}`,
-      gameId: party.gameId,
-      playStyles: [party.playStyle],
-      skill: party.skill,
-      hours: party.hours,
-      lookingForSize: party.partySize,
-      role: index === 0 ? "Лидер сбора" : "Уже в пати",
-      mic: party.micRequired,
-      online: true,
-      bio: party.note,
-      timezone: "МСК",
-    }));
-    writeSnapshot({
-      joinCode: party.id.toUpperCase(),
-      partyName: party.name,
-      seats: makeSeats(party.partySize, placeholders),
-      joinedParty: party,
-      ready: false,
-      gameId: party.gameId,
-    });
-    toast.success(`Вы в сборе «${party.name}»`);
-  }, []);
+  const joinParty = useCallback(
+    (party: OpenParty) => {
+      if (party.filled >= party.partySize) return;
+      const placeholders: Player[] = Array.from({ length: party.filled }, (_, index) => ({
+        id: `slot-${party.id}-${index}`,
+        name: index === 0 ? party.leader : `Игрок ${index + 1}`,
+        gameId: party.gameId,
+        playStyles: [party.playStyle],
+        skill: party.skill,
+        hours: party.hours,
+        lookingForSize: party.partySize,
+        role: index === 0 ? "Лидер сбора" : "Уже в пати",
+        mic: party.micRequired,
+        online: true,
+        bio: party.note,
+        timezone: "МСК",
+      }));
+      commit({
+        ...ensureClientSnapshot(),
+        joinCode: party.id.toUpperCase(),
+        partyName: party.name,
+        seats: makeSeats(party.partySize, placeholders),
+        joinedParty: party,
+        ready: false,
+        gameId: party.gameId,
+        published: false,
+        lobbyMeta: {
+          playStyle: party.playStyle,
+          skill: party.skill,
+          hours: party.hours,
+        },
+      });
+      toast.success(`Вы в сборе «${party.name}»`);
+    },
+    [commit],
+  );
 
   const leaveJoined = useCallback(() => {
     const current = ensureClientSnapshot();
-    writeSnapshot({
+    commit({
+      ...current,
       joinCode: makeJoinCode(),
       partyName: `Пати ${YOU_NAME}`,
       seats: makeSeats(current.seats.length),
       joinedParty: null,
       ready: false,
-      gameId: current.gameId,
+      published: false,
     });
     toast("Вы вышли из сбора");
-  }, []);
+  }, [commit]);
 
-  const loadJoinCode = useCallback((code: string) => {
-    const normalized = code.trim().toUpperCase();
-    if (!normalized) return false;
+  const loadJoinCode = useCallback(
+    async (code: string) => {
+      const normalized = code.trim().toUpperCase();
+      if (!normalized) return false;
+
+      try {
+        const response = await fetch(`/api/join/${normalized}`);
+        if (response.ok) {
+          const data = (await response.json()) as { session: JoinSession };
+          const session = data.session;
+          commit({
+            ...ensureClientSnapshot(),
+            joinCode: session.code,
+            partyName: session.partyName,
+            seats: sessionToSeats(session),
+            joinedParty: null,
+            ready: session.ready,
+            gameId: session.gameId,
+            published: session.published,
+            lobbyMeta: {
+              playStyle: session.playStyle,
+              skill: session.skill,
+              hours: session.hours,
+            },
+          });
+          toast.success(`Открыта пати по коду ${session.code}`);
+          return true;
+        }
+        if (response.status === 404) {
+          toast.error("Пати с таким кодом не найдена. Попросите хоста открыть сбор.");
+          return false;
+        }
+      } catch {
+        toast.error("Не удалось загрузить пати по коду.");
+        return false;
+      }
+      return false;
+    },
+    [commit],
+  );
+
+  const applyOpenParty = useCallback(
+    (party: OpenParty) => {
+      const current = ensureClientSnapshot();
+      if (current.gameId !== party.gameId) {
+        commit({ ...current, gameId: party.gameId });
+      }
+    },
+    [commit],
+  );
+
+  const publishOpenParty = useCallback(async () => {
     const current = ensureClientSnapshot();
-    if (normalized === current.joinCode.toUpperCase()) return true;
-    const saved = deserialize(sessionStorage.getItem(STORAGE_KEY));
-    if (saved && saved.joinCode.toUpperCase() === normalized) {
-      writeSnapshot(saved);
-      return true;
+    if (!current.gameId) {
+      toast.error("Сначала зайдите в лобби игры.");
+      return null;
     }
-    writeSnapshot({
-      joinCode: normalized,
-      partyName: `Пати ${normalized}`,
-      seats: makeSeats(5),
-      joinedParty: null,
-      ready: false,
-      gameId: "valorant",
-    });
-    toast.success(`Открыта пати по коду ${normalized}`);
-    return true;
-  }, []);
-
-  const applyOpenParty = useCallback((party: OpenParty) => {
-    const current = ensureClientSnapshot();
-    if (current.gameId !== party.gameId) {
-      writeSnapshot({ ...current, gameId: party.gameId });
+    if (current.joinedParty) {
+      toast.error("Вы в чужом сборе — выйдите, чтобы открыть свой.");
+      return null;
     }
-  }, []);
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/join/${snapshot.joinCode}`
-      : `/join/${snapshot.joinCode}`;
+    await syncJoinToServer(current);
+
+    try {
+      const response = await fetch("/api/parties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: current.joinCode,
+          partyName: current.partyName,
+          gameId: current.gameId,
+          partySize: current.seats.length,
+          playStyle: current.lobbyMeta.playStyle,
+          skill: current.lobbyMeta.skill,
+          hours: current.lobbyMeta.hours,
+          seats: seatsToStored(current.seats),
+          filled: current.seats.filter((seat) => seat.kind !== "empty").length,
+          note: `Ищем ещё · ${current.partyName}`,
+        }),
+      });
+      const data = (await response.json()) as {
+        party?: OpenParty;
+        error?: string;
+      };
+      if (!response.ok || !data.party) {
+        toast.error(data.error ?? "Не удалось открыть сбор.");
+        return null;
+      }
+      const after = ensureClientSnapshot();
+      commit({
+        ...after,
+        published: true,
+        feedNonce: after.feedNonce + 1,
+      });
+      toast.success("Сбор открыт в ленте лобби");
+      return data.party;
+    } catch {
+      toast.error("Сеть недоступна — сбор не опубликован.");
+      return null;
+    }
+  }, [commit]);
 
   const copyShareLink = useCallback(async () => {
     const current = ensureClientSnapshot();
+    await syncJoinToServer(current);
     const url = `${window.location.origin}/join/${current.joinCode}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -273,6 +474,11 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const bumpFeed = useCallback(() => {
+    const current = ensureClientSnapshot();
+    writeSnapshot({ ...current, feedNonce: current.feedNonce + 1 });
+  }, []);
+
   const value: PartyContextValue = {
     joinCode: snapshot.joinCode,
     partyName: snapshot.partyName,
@@ -280,10 +486,13 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     joinedParty: snapshot.joinedParty,
     ready: snapshot.ready,
     gameId: snapshot.gameId,
+    published: snapshot.published,
+    feedNonce: snapshot.feedNonce,
     filledCount,
     invitedIds,
     partyFull,
     setPartyName: (name) => update({ partyName: name }),
+    setLobbyMeta: (meta) => update({ lobbyMeta: meta }),
     ensurePartyForGame,
     invite,
     kick,
@@ -292,8 +501,13 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     setReady: (ready) => update({ ready }),
     loadJoinCode,
     applyOpenParty,
-    shareUrl,
+    publishOpenParty,
+    shareUrl:
+      typeof window !== "undefined"
+        ? `${window.location.origin}/join/${snapshot.joinCode}`
+        : `/join/${snapshot.joinCode}`,
     copyShareLink,
+    bumpFeed,
   };
 
   return <PartyContext.Provider value={value}>{children}</PartyContext.Provider>;
@@ -305,12 +519,14 @@ export function useParty() {
   return ctx;
 }
 
-/** Apply a join deep-link after mount (async, avoids sync setState-in-effect). */
 export function useJoinCodeBootstrap(code: string) {
   const party = useParty();
+  const asked = useRef<string | null>(null);
   useEffect(() => {
+    if (asked.current === code.toUpperCase()) return;
+    asked.current = code.toUpperCase();
     const timer = window.setTimeout(() => {
-      party.loadJoinCode(code);
+      void party.loadJoinCode(code);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [code, party]);

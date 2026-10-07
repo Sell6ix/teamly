@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
 import { YOU_NAME } from "@/lib/data";
-import { Check, Copy, Link2, PartyPopper, Users } from "lucide-react";
+import { Check, Copy, Link2, PartyPopper, Radio, Users } from "lucide-react";
 import { useState } from "react";
 
 export function PartyTray() {
@@ -19,10 +19,22 @@ export function PartyTray() {
     filledCount,
     joinCode,
     copyShareLink,
+    published,
+    publishOpenParty,
   } = useParty();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const full = filledCount === seats.length;
   const canConfirm = filledCount >= 2;
+
+  async function handlePublish() {
+    setPublishing(true);
+    try {
+      await publishOpenParty();
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   const body = (
     <>
@@ -34,6 +46,7 @@ export function PartyTray() {
           </p>
           <p className="mt-1 text-xs text-white/50">
             {filledCount} из {seats.length} · код {joinCode}
+            {published ? " · в ленте" : ""}
           </p>
         </div>
         <button
@@ -64,13 +77,12 @@ export function PartyTray() {
             key={index}
             className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
           >
-                {seat.kind === "you" ? (
-                  <span className="text-sm">
-                    <span className="font-medium text-white">{YOU_NAME}</span>
-                    {" "}
-                    <span className="text-xs text-white/40">это вы</span>
-                  </span>
-                ) : null}
+            {seat.kind === "you" ? (
+              <span className="text-sm">
+                <span className="font-medium text-white">{YOU_NAME}</span>{" "}
+                <span className="text-xs text-white/40">это вы</span>
+              </span>
+            ) : null}
             {seat.kind === "player" ? (
               <>
                 <span className="text-sm">
@@ -92,6 +104,19 @@ export function PartyTray() {
       </ol>
 
       <div className="mt-4 flex flex-col gap-2">
+        {!joinedParty ? (
+          <Button
+            type="button"
+            size="lg"
+            data-testid="publish-party"
+            disabled={publishing || published}
+            onClick={() => void handlePublish()}
+          >
+            <Radio data-icon="inline-start" />
+            {published ? "Сбор уже в ленте" : "Открыть сбор"}
+          </Button>
+        ) : null}
+
         <Button
           type="button"
           size="lg"

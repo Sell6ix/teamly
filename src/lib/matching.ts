@@ -109,13 +109,21 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
   };
 }
 
-export function matchPeople(criteria: MatchCriteria): MatchResult {
+export function matchPeople(
+  criteria: MatchCriteria,
+  extraParties: OpenParty[] = [],
+): MatchResult {
   const playerMatches = players
     .map((player) => scorePlayer(player, criteria))
     .filter((row): row is PlayerMatch => row !== null)
     .sort((a, b) => b.score - a.score || Number(b.player.online) - Number(a.player.online));
 
-  const partyMatches = openParties
+  const byId = new Map<string, OpenParty>();
+  for (const party of [...openParties, ...extraParties]) {
+    byId.set(party.id, party);
+  }
+
+  const partyMatches = [...byId.values()]
     .map((party) => scoreParty(party, criteria))
     .filter((row): row is PartyMatch => row !== null)
     .sort((a, b) => b.score - a.score);
