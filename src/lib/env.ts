@@ -14,6 +14,15 @@ export function discordBotConfigured(): boolean {
   return Boolean(process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_LFG_CHANNEL_ID);
 }
 
+/** Bot + guild required to create per-party voice channels / invites. */
+export function discordVoiceConfigured(): boolean {
+  return Boolean(
+    process.env.DISCORD_BOT_TOKEN &&
+      process.env.DISCORD_GUILD_ID &&
+      /^\d{17,20}$/.test(process.env.DISCORD_GUILD_ID),
+  );
+}
+
 export function appUrl(): string {
   return (
     process.env.AUTH_URL ||

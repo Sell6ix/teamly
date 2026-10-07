@@ -10,8 +10,9 @@ import {
   lfpTemplatesFor,
   loadProfile,
 } from "@/lib/profile";
-import { Check, Copy, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
+import { Check, Copy, Headset, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 
 function subscribeNoop() {
   return () => undefined;
@@ -45,12 +46,30 @@ export function PartyTray() {
   const { locale } = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const joinCodeReady = Boolean(joinCode && joinCode.length >= 3 && !joinCode.includes("·"));
 
   // Open only on fresh join — not every lobby mount while still in a gathering.
   useEffect(() => {
     const open = () => setMobileOpen(true);
     window.addEventListener("teamly:open-tray", open);
     return () => window.removeEventListener("teamly:open-tray", open);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/party-voice")
+      .then((res) => res.json())
+      .then((data: { enabled?: boolean }) => {
+        if (!cancelled) setVoiceEnabled(Boolean(data.enabled));
+      })
+      .catch(() => {
+        if (!cancelled) setVoiceEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const [looking, setLooking] = useState(false);
   const [note, setNote] = useState("");
@@ -102,6 +121,47 @@ export function PartyTray() {
     if (!template) return;
     setTemplateId(id);
     setNote(template.note);
+  }
+
+  async function handleVoice() {
+    if (voiceEnabled !== true) {
+      toast.message(t("toast.voiceOff"));
+      return;
+    }
+    if (!joinCodeReady) {
+      toast.message(t("tray.voiceHintWait"));
+      return;
+    }
+    setVoiceBusy(true);
+    try {
+      const response = await fetch(
+        `/api/party-voice/${encodeURIComponent(joinCode)}`,
+        { method: "POST" },
+      );
+      const data = (await response.json()) as {
+        inviteUrl?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.inviteUrl) {
+        toast.error(
+          data.error === "discord_voice_not_configured"
+            ? t("toast.voiceOff")
+            : t("toast.voiceFail"),
+        );
+        return;
+      }
+      try {
+        window.open(data.inviteUrl, "_blank", "noopener,noreferrer");
+        toast.success(t("toast.voiceOk"));
+      } catch {
+        await navigator.clipboard.writeText(data.inviteUrl);
+        toast.success(t("toast.voiceCopied"));
+      }
+    } catch {
+      toast.error(t("toast.voiceFail"));
+    } finally {
+      setVoiceBusy(false);
+    }
   }
 
   const body = (
@@ -340,6 +400,37 @@ export function PartyTray() {
             {t("tray.copyLink")}
           </Button>
         </div>
+
+        <div className="space-y-1">
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            data-testid="party-voice"
+            disabled={voiceEnabled === false || !joinCodeReady || voiceBusy}
+            title={
+              voiceEnabled === false
+                ? t("tray.voiceHintOff")
+                : !joinCodeReady
+                  ? t("tray.voiceHintWait")
+                  : t("tray.voiceOpen")
+            }
+            onClick={() => void handleVoice()}
+            className="w-full border-white/15 bg-white/5"
+          >
+            <Headset data-icon="inline-start" />
+            {voiceBusy ? t("tray.voiceBusy") : t("tray.voice")}
+          </Button>
+          {voiceEnabled === false ? (
+            <p
+              className="text-[11px] leading-4 text-white/35"
+              data-testid="party-voice-hint"
+            >
+              {t("tray.voiceHintOff")}
+            </p>
+          ) : null}
+        </div>
+
         <p className="flex items-center gap-1.5 text-[11px] text-white/40">
           <Link2 className="size-3" />
           /join/{joinCode}

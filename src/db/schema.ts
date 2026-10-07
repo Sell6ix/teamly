@@ -123,3 +123,13 @@ export const partyMessages = sqliteTable("party_messages", {
   body: text("body").notNull(),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
 });
+
+/** One Discord voice channel + invite per party join code. */
+export const partyVoiceChannels = sqliteTable("party_voice_channels", {
+  partyCode: text("partyCode").primaryKey(),
+  channelId: text("channelId").notNull(),
+  inviteCode: text("inviteCode").notNull(),
+  inviteUrl: text("inviteUrl").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
+});

@@ -21,10 +21,11 @@ cp .env.example .env.local
 | `DATABASE_URL` | Путь к SQLite, по умолчанию `file:./data/teamly.db` |
 | `DISCORD_BOT_TOKEN` | Токен бота |
 | `DISCORD_LFG_CHANNEL_ID` | Канал для брифов и `/lfg` |
-| `DISCORD_GUILD_ID` | Опционально — быстрый деплой slash-команд |
+| `DISCORD_GUILD_ID` | Опционально для slash; **обязателен** для кнопки «Войс» в трее |
+| `DISCORD_VOICE_CATEGORY_ID` | Опционально — категория для voice-каналов пати |
 | `APP_URL` | Ссылки в сообщениях бота |
 
-Без Discord OAuth работает **демо-вход** на `/login` (пишет пользователя в SQLite). Без бота подтверждение пати копирует бриф; с ботом — ещё постит в канал.
+Без Discord OAuth работает **демо-вход** на `/login` (пишет пользователя в SQLite). Без бота подтверждение пати копирует бриф; с ботом — ещё постит в канал. Кнопка **Войс** в трее создаёт Discord voice-канал + invite на код `/join` (не WebRTC); без `DISCORD_BOT_TOKEN` + `DISCORD_GUILD_ID` кнопка disabled с подсказкой.
 
 ## Запуск
 
@@ -44,7 +45,7 @@ npm run build
 - `/party/{id}`, `/join/{code}` — сборы
 - `/people`, `/people/{personId}` — каталог людей + чёрный список
 
-В трее: **Я ищу**, **Открыть сбор**, подтверждение с брифом (clipboard + Discord), сворачиваемый **чат пати** (SQLite по коду `/join`).
+В трее: **Я ищу**, **Открыть сбор**, подтверждение с брифом (clipboard + Discord), сворачиваемый **чат пати** (SQLite по коду `/join`), **Войс** (Discord invite на канал пати).
 
 Язык интерфейса: `RU` / `EN` в шапке и в профиле (`teamly-ui-locale`). Тема: светлая / тёмная. В лобби — **Сбросить фильтры** (и `Esc`).
 

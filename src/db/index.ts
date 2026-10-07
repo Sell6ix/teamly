@@ -115,6 +115,14 @@ export function ensureDb() {
     );
     CREATE INDEX IF NOT EXISTS party_messages_code_created
       ON party_messages (partyCode, createdAt);
+    CREATE TABLE IF NOT EXISTS party_voice_channels (
+      partyCode TEXT PRIMARY KEY,
+      channelId TEXT NOT NULL,
+      inviteCode TEXT NOT NULL,
+      inviteUrl TEXT NOT NULL,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
   `);
   // Lightweight migrations for existing local DBs
   try {
