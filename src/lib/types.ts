@@ -62,6 +62,8 @@ export type Game = {
 export type Player = {
   id: string;
   name: string;
+  /** Same person across games (CS2 + L4D2, etc.) */
+  personId?: string;
   gameId: GameId;
   playStyles: PlayStyle[];
   skill: SkillLevel;
@@ -74,10 +76,10 @@ export type Player = {
   timezone: string;
   region?: Region;
   voicePlatform?: VoicePlatform;
-  /** Public Steam profile URL when the player shared one */
   steamProfileUrl?: string | null;
   discordUrl?: string | null;
   riotTag?: string | null;
+  faceitUrl?: string | null;
 };
 
 export type OpenParty = {
@@ -108,6 +110,8 @@ export type MatchCriteria = {
   roleTag?: string | null;
   region?: Region | null;
   voicePlatform?: VoicePlatform | null;
+  /** personId from local «недавно играли» */
+  recentPersonIds?: string[];
 };
 
 export type PlayerMatch = {

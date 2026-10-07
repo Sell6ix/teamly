@@ -35,6 +35,8 @@ import {
   voiceLabel,
   VOICE_PLATFORMS,
 } from "@/lib/profile";
+import { otherGamesFor, recentForGame, recentPersonIds } from "@/lib/recent";
+import { games } from "@/lib/data";
 import type {
   Game,
   HourWindow,
@@ -116,8 +118,15 @@ export function GameLobby({
   }
 
   const criteria = useMemo(
-    () => filtersToCriteria(game.id, filters),
-    [game.id, filters],
+    () => ({
+      ...filtersToCriteria(game.id, filters),
+      recentPersonIds: recentPersonIds(),
+    }),
+    [game.id, filters, party.feedNonce],
+  );
+  const recentPlayers = useMemo(
+    () => recentForGame(game.id),
+    [game.id, party.feedNonce],
   );
   const key = criteriaKey(filters, game.id, party.feedNonce);
   const loading = feed.loading || feed.key !== key;
@@ -464,6 +473,36 @@ export function GameLobby({
                   )}
                 </TabsContent>
                 <TabsContent value="players" className="mt-4 space-y-3">
+                  {recentPlayers.length > 0 ? (
+                    <div
+                      className="rounded-2xl border border-[var(--brand)]/20 bg-[var(--brand)]/8 p-3"
+                      data-testid="recent-played"
+                    >
+                      <p className="mb-2 text-[11px] uppercase tracking-wide text-[var(--brand)]">
+                        Недавно играли
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {recentPlayers.map((player) => (
+                          <button
+                            key={player.id}
+                            type="button"
+                            disabled={
+                              party.partyFull ||
+                              Boolean(party.joinedParty) ||
+                              party.invitedIds.has(player.id)
+                            }
+                            onClick={() => party.invite(player)}
+                            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-left text-sm text-white/85 hover:border-white/25 disabled:opacity-50"
+                          >
+                            <span className="font-medium">{player.name}</span>
+                            <span className="ml-2 text-[11px] text-white/40">
+                              {player.role}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {result.players.length === 0 ? (
                     <p className="text-sm text-white/50">
                       Соло-игроков нет — посмотрите вкладку сборов.
@@ -598,6 +637,7 @@ function PlayerCard({
               steamProfileUrl={player.steamProfileUrl}
               discordUrl={player.discordUrl}
               riotTag={player.riotTag}
+              faceitUrl={player.faceitUrl}
               compact
             />
           </h3>
@@ -605,6 +645,14 @@ function PlayerCard({
             {player.role} · {skillLabelFor(player.gameId, player.skill)}
             {player.region ? ` · ${regionLabel[player.region]}` : ""}
           </p>
+          {otherGamesFor(player).length > 0 ? (
+            <p className="mt-1 text-[11px] text-white/40">
+              Ещё играет:{" "}
+              {otherGamesFor(player)
+                .map((id) => games.find((item) => item.id === id)?.name ?? id)
+                .join(", ")}
+            </p>
+          ) : null}
         </div>
         <Button
           type="button"

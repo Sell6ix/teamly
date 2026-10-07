@@ -122,6 +122,7 @@ export function PartyTray() {
                     steamProfileUrl={youProfile.steamProfileUrl}
                     discordUrl={youProfile.discordUrl}
                     riotTag={youProfile.riotTag}
+                    faceitUrl={youProfile.faceitUrl}
                     compact
                   />
                 </div>
@@ -137,6 +138,7 @@ export function PartyTray() {
                       steamProfileUrl={seat.player.steamProfileUrl}
                       discordUrl={seat.player.discordUrl}
                       riotTag={seat.player.riotTag}
+                      faceitUrl={seat.player.faceitUrl}
                       compact
                     />
                   </div>

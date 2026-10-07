@@ -88,6 +88,10 @@ export async function POST(request: Request) {
       ? (payload.voicePlatform as VoicePlatform)
       : null;
 
+  const recentPersonIds = Array.isArray(payload.recentPersonIds)
+    ? payload.recentPersonIds.filter((item): item is string => typeof item === "string")
+    : [];
+
   const criteria: MatchCriteria = {
     gameId: typedGameId,
     playStyle,
@@ -97,6 +101,7 @@ export async function POST(request: Request) {
     roleTag,
     region,
     voicePlatform,
+    recentPersonIds,
   };
 
   const published = listPublishedParties(typedGameId);

@@ -3,6 +3,7 @@
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { loadProfile } from "@/lib/profile";
+import { rememberInvite } from "@/lib/recent";
 import { shareOrCopy } from "@/lib/share";
 import type {
   GameId,
@@ -307,7 +308,8 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
       }
       const seats = [...current.seats];
       seats[emptyIndex] = { kind: "player", player };
-      commit({ ...current, seats });
+      rememberInvite(player);
+      commit({ ...current, seats, feedNonce: current.feedNonce + 1 });
       toast.success(`${player.name} в пати`, { duration: 1800 });
     },
     [commit],

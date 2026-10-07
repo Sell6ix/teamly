@@ -102,6 +102,16 @@ export function ProfilePanel({
               data-testid="profile-riot"
             />
           </label>
+          <label className="block text-xs text-white/45">
+            Faceit URL
+            <input
+              value={draft.faceitUrl}
+              onChange={(e) => setDraft({ ...draft, faceitUrl: e.target.value })}
+              placeholder="https://www.faceit.com/en/players/…"
+              className={fieldClass}
+              data-testid="profile-faceit"
+            />
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs text-white/45">
               Регион

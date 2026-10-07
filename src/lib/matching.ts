@@ -7,6 +7,7 @@ import {
 } from "./game-fields";
 import { hourLabel, playStyleLabel } from "./labels";
 import { regionLabel, voiceLabel } from "./profile";
+import { personIdOf } from "./recent";
 import type {
   Game,
   MatchCriteria,
@@ -110,6 +111,11 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     }
   }
 
+  if (criteria.recentPersonIds?.includes(personIdOf(player))) {
+    score += 14;
+    reasons.unshift("Недавно играли вместе");
+  }
+
   return {
     player,
     score: Math.min(99, Math.max(1, Math.round(score))),
@@ -188,6 +194,7 @@ export function matchPeople(
   extraParties: OpenParty[] = [],
 ): MatchResult {
   const roleTag = criteria.roleTag ?? null;
+  const recent = new Set(criteria.recentPersonIds ?? []);
   const playerMatches = players
     .map((player) => scorePlayer(player, criteria))
     .filter((row): row is PlayerMatch => row !== null)
@@ -197,6 +204,9 @@ export function matchPeople(
         const bRole = playerHasRoleTag(b.player, roleTag) ? 1 : 0;
         if (aRole !== bRole) return bRole - aRole;
       }
+      const aRecent = recent.has(personIdOf(a.player)) ? 1 : 0;
+      const bRecent = recent.has(personIdOf(b.player)) ? 1 : 0;
+      if (aRecent !== bRecent) return bRecent - aRecent;
       return b.score - a.score || Number(b.player.online) - Number(a.player.online);
     });
 

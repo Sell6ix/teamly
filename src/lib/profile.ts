@@ -10,6 +10,7 @@ export type UserProfile = {
   steamProfileUrl: string;
   discordUrl: string;
   riotTag: string;
+  faceitUrl: string;
   region: Region;
   voicePlatform: VoicePlatform;
 };
@@ -35,6 +36,7 @@ export function defaultProfile(): UserProfile {
     steamProfileUrl: "",
     discordUrl: "",
     riotTag: "",
+    faceitUrl: "",
     region: "msk",
     voicePlatform: "discord",
   };

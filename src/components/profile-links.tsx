@@ -4,17 +4,20 @@ export function ProfileLinks({
   steamProfileUrl,
   discordUrl,
   riotTag,
+  faceitUrl,
   compact = false,
 }: {
   steamProfileUrl?: string | null;
   discordUrl?: string | null;
   riotTag?: string | null;
+  faceitUrl?: string | null;
   compact?: boolean;
 }) {
   const steam = steamProfileUrl?.trim();
   const discord = discordUrl?.trim();
   const riot = riotTag?.trim();
-  if (!steam && !discord && !riot) return null;
+  const faceit = faceitUrl?.trim();
+  if (!steam && !discord && !riot && !faceit) return null;
 
   const chip =
     "inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-normal transition hover:border-white/25";
@@ -33,6 +36,18 @@ export function ProfileLinks({
           <ExternalLink className="size-3" />
         </a>
       ) : null}
+      {faceit ? (
+        <a
+          href={faceit}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${chip} text-[#ff8a3d] hover:bg-[#ff5500]/15`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          Faceit
+          <ExternalLink className="size-3" />
+        </a>
+      ) : null}
       {discord ? (
         <a
           href={discord}
@@ -46,10 +61,7 @@ export function ProfileLinks({
         </a>
       ) : null}
       {riot ? (
-        <span
-          className={`${chip} cursor-default text-[#ff4655]/90`}
-          title="Riot ID"
-        >
+        <span className={`${chip} cursor-default text-[#ff4655]/90`} title="Riot ID">
           {riot}
         </span>
       ) : null}

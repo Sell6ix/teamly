@@ -50,8 +50,11 @@ npm run dev
 
 ```bash
 npm run lint
+npm run test
 npm run build
 ```
+
+В карточках — Steam / Discord / Faceit / Riot. «Недавно играли» живёт в браузере и поднимает тех же людей в другой игре (например CS2 ↔ L4D2).
 
 ## Состояния интерфейса
 
