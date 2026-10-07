@@ -113,3 +113,13 @@ export const lookingPosts = sqliteTable("looking_posts", {
   payloadJson: text("payloadJson").notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
 });
+
+/** Thin party-local chat keyed by join code (not DMs / lobby-wide). */
+export const partyMessages = sqliteTable("party_messages", {
+  id: text("id").primaryKey(),
+  partyCode: text("partyCode").notNull(),
+  authorName: text("authorName").notNull(),
+  authorId: text("authorId"),
+  body: text("body").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+});

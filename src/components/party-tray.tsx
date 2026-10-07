@@ -1,5 +1,6 @@
 "use client";
 
+import { PartyChat } from "@/components/party-chat";
 import { ProfileLinks } from "@/components/profile-links";
 import { useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
@@ -218,6 +219,8 @@ export function PartyTray() {
           </ul>
         );
       })()}
+
+      <PartyChat partyCode={joinCode} />
 
       <div className="mt-4 flex flex-col gap-2">
         {!joinedParty && !published ? (

@@ -105,6 +105,16 @@ export function ensureDb() {
       payloadJson TEXT NOT NULL,
       updatedAt INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS party_messages (
+      id TEXT PRIMARY KEY,
+      partyCode TEXT NOT NULL,
+      authorName TEXT NOT NULL,
+      authorId TEXT,
+      body TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS party_messages_code_created
+      ON party_messages (partyCode, createdAt);
   `);
   // Lightweight migrations for existing local DBs
   try {
