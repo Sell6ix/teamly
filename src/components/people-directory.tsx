@@ -20,7 +20,7 @@ import {
 } from "@/lib/people";
 import type { GameId } from "@/lib/types";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function PeopleDirectory({
@@ -33,9 +33,11 @@ export function PeopleDirectory({
   const people = useMemo(() => allPeople(), []);
   const [query, setQuery] = useState(initialQuery);
   const [gameId, setGameId] = useState<GameId | "all">(initialGame);
-  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(() =>
-    typeof window === "undefined" ? [] : loadBlacklist(),
-  );
+  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
+
+  useEffect(() => {
+    setBlacklist(loadBlacklist());
+  }, []);
 
   const filtered = filterPeople(people, query, gameId);
 
