@@ -1,4 +1,5 @@
 import { roleFacetFor } from "@/lib/game-fields";
+import { translate, type Locale } from "@/lib/i18n/messages";
 import { gameById, matchPeople } from "@/lib/matching";
 import { listLooking, listPublishedParties } from "@/lib/party-store";
 import { LANGUAGES, REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
@@ -30,23 +31,27 @@ function isRoleTag(gameId: GameId, value: unknown): value is string {
   return Boolean(roleFacetFor(gameId)?.options.some((opt) => opt.id === value));
 }
 
+function localeOf(value: unknown): Locale {
+  return value === "en" ? "en" : "ru";
+}
+
+function err(locale: Locale, key: string, status: number) {
+  return NextResponse.json({ error: translate(locale, key) }, { status });
+}
+
 export async function POST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Не удалось прочитать запрос. Проверьте соединение и повторите." },
-      { status: 400 },
-    );
+    return err("ru", "api.badJson", 400);
   }
 
   const payload = body as Record<string, unknown>;
+  const locale = localeOf(payload.locale);
+
   if (payload.forceError === true) {
-    return NextResponse.json(
-      { error: "Поиск временно недоступен. Попробуйте ещё раз через несколько секунд." },
-      { status: 503 },
-    );
+    return err(locale, "api.matchUnavailable", 503);
   }
 
   const gameId = payload.gameId;
@@ -56,22 +61,19 @@ export async function POST(request: Request) {
   const hours = payload.hours;
 
   if (typeof gameId !== "string" || !gameById(gameId)) {
-    return NextResponse.json({ error: "Выберите игру из списка." }, { status: 400 });
+    return err(locale, "api.pickGame", 400);
   }
   if (!isPlayStyle(playStyle)) {
-    return NextResponse.json({ error: "Укажите стиль игры." }, { status: 400 });
+    return err(locale, "api.pickStyle", 400);
   }
   if (typeof partySize !== "number" || partySize < 2 || partySize > 12) {
-    return NextResponse.json({ error: "Формат пати должен быть от 2 до 12 человек." }, { status: 400 });
+    return err(locale, "api.pickSize", 400);
   }
   if (typeof skill !== "number" || skill < 1 || skill > 5) {
-    return NextResponse.json({ error: "Укажите свой уровень." }, { status: 400 });
+    return err(locale, "api.pickSkill", 400);
   }
   if (!Array.isArray(hours) || hours.length === 0 || !hours.every(isHour)) {
-    return NextResponse.json(
-      { error: "Отметьте хотя бы одно окно, когда вы обычно онлайн." },
-      { status: 400 },
-    );
+    return err(locale, "api.pickHours", 400);
   }
 
   const typedGameId = gameId as GameId;
@@ -109,6 +111,7 @@ export async function POST(request: Request) {
     region,
     voicePlatform,
     language,
+    locale,
     recentPersonIds,
     blockedPersonIds,
   };

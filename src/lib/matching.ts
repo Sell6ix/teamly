@@ -5,8 +5,7 @@ import {
   roleOptionLabel,
   skillLabelFor,
 } from "./game-fields";
-import { hourLabel, playStyleLabel } from "./labels";
-import { languageLabel, regionLabel, voiceLabel } from "./profile";
+import { translate, type Locale } from "./i18n/messages";
 import { personIdOf } from "./recent";
 import type {
   Game,
@@ -18,6 +17,26 @@ import type {
   Player,
   PlayerMatch,
 } from "./types";
+
+function localeOf(criteria: MatchCriteria): Locale {
+  return criteria.locale === "en" ? "en" : "ru";
+}
+
+function t(
+  criteria: MatchCriteria,
+  key: string,
+  vars?: Record<string, string | number>,
+) {
+  return translate(localeOf(criteria), key, vars);
+}
+
+function styleLabel(criteria: MatchCriteria, style: MatchCriteria["playStyle"]) {
+  return t(criteria, `style.${style}`).toLowerCase();
+}
+
+function hourLabels(criteria: MatchCriteria, hours: MatchCriteria["hours"]) {
+  return hours.map((h) => t(criteria, `hour.${h}`).toLowerCase()).join(", ");
+}
 
 function effectiveLanguage(
   region?: Player["region"] | OpenParty["region"],
@@ -57,45 +76,50 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
 
   const reasons: string[] = [];
   let score = 40;
+  const locale = localeOf(criteria);
 
   if (styleFit === "exact") {
     score += 28;
-    reasons.push(`Тот же стиль: ${playStyleLabel[criteria.playStyle].toLowerCase()}`);
+    reasons.push(
+      t(criteria, "reason.styleExact", { style: styleLabel(criteria, criteria.playStyle) }),
+    );
   } else {
     score += 12;
-    reasons.push("Стиль близкий, не идеальный");
+    reasons.push(t(criteria, "reason.styleSoft"));
   }
 
-  const skillName = skillLabelFor(criteria.gameId, player.skill);
+  const skillName = skillLabelFor(criteria.gameId, player.skill, locale);
   score += Math.max(0, 22 - rankGap * 9);
-  if (rankGap === 0) reasons.push(`Уровень совпал: ${skillName}`);
-  else reasons.push(`Рядом по уровню (${skillName})`);
+  if (rankGap === 0) reasons.push(t(criteria, "reason.skillExact", { skill: skillName }));
+  else reasons.push(t(criteria, "reason.skillNear", { skill: skillName }));
 
   score += hours.length * 8;
-  reasons.push(`Онлайн: ${hours.map((h) => hourLabel[h].toLowerCase()).join(", ")}`);
+  reasons.push(t(criteria, "reason.hours", { hours: hourLabels(criteria, hours) }));
 
   if (player.lookingForSize === criteria.partySize) {
     score += 12;
-    reasons.push("Ищет тот же формат пати");
+    reasons.push(t(criteria, "reason.sameSize"));
   } else if (Math.abs(player.lookingForSize - criteria.partySize) === 1) {
     score += 4;
   }
 
   if (criteria.playStyle === "voice" && player.mic) {
     score += 6;
-    reasons.push("Микро уже включено");
+    reasons.push(t(criteria, "reason.micOn"));
   }
 
   if (player.online) {
     score += 8;
-    reasons.push("Сейчас в сети");
+    reasons.push(t(criteria, "reason.onlineNow"));
   }
 
   if (criteria.roleTag) {
     if (playerHasRoleTag(player, criteria.roleTag)) {
       score += 28;
-      const label = roleOptionLabel(criteria.gameId, criteria.roleTag);
-      reasons.unshift(label ? `Роль: ${label}` : "Нужная роль");
+      const label = roleOptionLabel(criteria.gameId, criteria.roleTag, locale);
+      reasons.unshift(
+        label ? t(criteria, "reason.role", { role: label }) : t(criteria, "reason.roleNeeded"),
+      );
     } else {
       // Soft miss: keep in list but push well below role hits
       score -= 32;
@@ -105,7 +129,9 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
   if (criteria.region && player.region) {
     if (player.region === criteria.region) {
       score += 10;
-      reasons.push(`Регион: ${regionLabel[player.region]}`);
+      reasons.push(
+        t(criteria, "reason.region", { region: t(criteria, `region.${player.region}`) }),
+      );
     } else {
       score -= 8;
     }
@@ -117,7 +143,11 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
       player.voicePlatform === "any"
     ) {
       score += 8;
-      reasons.push(`Голос: ${voiceLabel[player.voicePlatform]}`);
+      reasons.push(
+        t(criteria, "reason.voice", {
+          voice: t(criteria, `voice.${player.voicePlatform}`),
+        }),
+      );
     } else {
       score -= 6;
     }
@@ -127,7 +157,9 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     const lang = effectiveLanguage(player.region, player.language);
     if (lang === criteria.language || lang === "mixed" || criteria.language === "mixed") {
       score += 12;
-      reasons.unshift(`Язык: ${languageLabel[lang]}`);
+      reasons.unshift(
+        t(criteria, "reason.language", { lang: t(criteria, `lang.${lang}`) }),
+      );
     } else {
       score -= 14;
     }
@@ -135,7 +167,7 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
 
   if (criteria.recentPersonIds?.includes(personIdOf(player))) {
     score += 14;
-    reasons.unshift("Недавно играли вместе");
+    reasons.unshift(t(criteria, "reason.recent"));
   }
 
   return {
@@ -162,43 +194,49 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
   if (rankGap > 2) return null;
 
   const openSlots = party.partySize - party.filled;
+  const locale = localeOf(criteria);
   const reasons: string[] = [
-    `Свободно ${openSlots} из ${party.partySize}`,
-    `Онлайн: ${hours.map((h) => hourLabel[h].toLowerCase()).join(", ")}`,
+    t(criteria, "reason.openSlots", { open: openSlots, total: party.partySize }),
+    t(criteria, "reason.hours", { hours: hourLabels(criteria, hours) }),
   ];
 
   let score = 50 + Math.max(0, 24 - rankGap * 8) + hours.length * 8;
   if (styleFit === "exact") score += 10;
   else {
     score += 4;
-    reasons.push("Стиль близкий");
+    reasons.push(t(criteria, "reason.styleSoftShort"));
   }
   if (sizeGap === 0) score += 12;
   else {
     score -= sizeGap * 8;
-    reasons.push(`Стол на ${party.partySize}, вы ищете ${criteria.partySize}`);
+    reasons.push(
+      t(criteria, "reason.sizeGap", {
+        party: party.partySize,
+        wanted: criteria.partySize,
+      }),
+    );
   }
-  if (rankGap === 0) reasons.push("Уровень пати совпадает");
+  if (rankGap === 0) reasons.push(t(criteria, "reason.partySkill"));
   if (party.micRequired && criteria.playStyle === "voice") {
     score += 6;
-    reasons.push("Голосовой сбор");
+    reasons.push(t(criteria, "reason.voiceParty"));
   }
 
   if (criteria.roleTag) {
-    const option = roleFacetFor(criteria.gameId)?.options.find(
+    const option = roleFacetFor(criteria.gameId, locale)?.options.find(
       (item) => item.id === criteria.roleTag,
     );
     const hay = `${party.name} ${party.note}`.toLowerCase();
     const mentions = option?.keywords.some((keyword) => hay.includes(keyword.toLowerCase()));
     if (mentions && option) {
       score += 10;
-      reasons.push(`Ищут: ${option.label}`);
+      reasons.push(t(criteria, "reason.lookingRole", { role: option.label }));
     }
   }
 
   if (party.startsAt) {
     score += 4;
-    reasons.unshift(`Старт: ${party.startsAt}`);
+    reasons.unshift(t(criteria, "reason.starts", { when: party.startsAt }));
   }
 
   if (criteria.region && party.region) {
@@ -222,7 +260,9 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
     const lang = effectiveLanguage(party.region, party.language);
     if (lang === criteria.language || lang === "mixed" || criteria.language === "mixed") {
       score += 10;
-      reasons.push(`Язык: ${languageLabel[lang]}`);
+      reasons.push(
+        t(criteria, "reason.language", { lang: t(criteria, `lang.${lang}`) }),
+      );
     } else {
       score -= 12;
     }

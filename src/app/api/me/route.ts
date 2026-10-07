@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { db, ensureDb } from "@/db";
 import { blacklist, profiles } from "@/db/schema";
+import { normalizeDiscordWebhookUrl } from "@/lib/discord";
 import { LANGUAGES, REGIONS, VOICE_PLATFORMS, type UserProfile } from "@/lib/profile";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -111,9 +112,22 @@ export async function PUT(request: Request) {
       (LANGUAGES as readonly string[]).includes(payload.language)
         ? payload.language
         : "ru",
-    discordWebhookUrl: String(payload.discordWebhookUrl ?? "").slice(0, 400),
+    discordWebhookUrl: (() => {
+      const raw = String(payload.discordWebhookUrl ?? "").trim().slice(0, 400);
+      if (!raw) return "";
+      const normalized = normalizeDiscordWebhookUrl(raw);
+      return normalized;
+    })(),
     updatedAt: new Date(),
   };
+
+  const rawWebhook = String(payload.discordWebhookUrl ?? "").trim();
+  if (rawWebhook && !values.discordWebhookUrl) {
+    return NextResponse.json(
+      { error: "Нужен валидный Discord Incoming Webhook URL." },
+      { status: 400 },
+    );
+  }
 
   db.insert(profiles)
     .values(values)

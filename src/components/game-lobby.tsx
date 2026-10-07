@@ -163,10 +163,11 @@ export function GameLobby({
   const criteria = useMemo(
     () => ({
       ...filtersToCriteria(game.id, filters),
+      locale,
       recentPersonIds: recentPersonIds(),
       blockedPersonIds: blockedPersonIds(),
     }),
-    [game.id, filters, party.feedNonce],
+    [game.id, filters, locale, party.feedNonce],
   );
   const recentPlayers = useMemo(
     () => recentForGame(game.id),

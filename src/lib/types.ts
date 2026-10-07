@@ -118,6 +118,8 @@ export type MatchCriteria = {
   region?: Region | null;
   voicePlatform?: VoicePlatform | null;
   language?: Language | null;
+  /** UI locale for match reason strings (ru default) */
+  locale?: "ru" | "en";
   /** personId from local «недавно играли» */
   recentPersonIds?: string[];
   /** personIds hidden via local blacklist */

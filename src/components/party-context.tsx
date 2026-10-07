@@ -290,6 +290,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           ready: false,
           gameId: nextGameId,
           published: false,
+          lookingPosted: false,
         });
         return;
       }

@@ -55,7 +55,11 @@ describe("scorePlayer", () => {
       recentPersonIds: ["vanya"],
     });
     expect(withRecent.players[0]?.player.personId).toBe("vanya");
-    expect(withRecent.players[0]?.reasons.some((r) => r.includes("Недавно"))).toBe(true);
+    expect(
+      withRecent.players[0]?.reasons.some(
+        (r) => r.includes("Недавно") || r.includes("recently"),
+      ),
+    ).toBe(true);
     expect(without.players.some((row) => row.player.personId === "vanya")).toBe(true);
   });
 
@@ -106,9 +110,26 @@ describe("scorePlayer", () => {
     expect(result.players.length).toBeGreaterThan(0);
     expect(
       result.players.some((row) =>
-        row.reasons.some((reason) => reason.includes("Язык")),
+        row.reasons.some(
+          (reason) => reason.includes("Язык") || reason.includes("Language"),
+        ),
       ),
     ).toBe(true);
+  });
+
+  it("localizes match reasons for EN UI", () => {
+    const result = matchPeople({
+      gameId: "valorant",
+      playStyle: "ranked",
+      partySize: 5,
+      skill: 4,
+      hours: ["evening"],
+      language: "en",
+      locale: "en",
+    });
+    const reasons = result.players.flatMap((row) => row.reasons).join(" | ");
+    expect(reasons).toMatch(/Language|Same style|Skill match|Online:/);
+    expect(reasons).not.toMatch(/Язык|Тот же стиль/);
   });
 
   it("hides blacklisted people from the feed", () => {

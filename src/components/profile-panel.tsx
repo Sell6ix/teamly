@@ -2,6 +2,7 @@
 
 import { LocaleSwitch } from "@/components/locale-switch";
 import { Button } from "@/components/ui/button";
+import { normalizeDiscordWebhookUrl } from "@/lib/discord";
 import { useT } from "@/lib/i18n/context";
 import {
   defaultProfile,
@@ -55,12 +56,20 @@ export function ProfilePanel({
   async function save() {
     setSaving(true);
     try {
-      saveProfile(draft);
+      const rawWebhook = draft.discordWebhookUrl.trim();
+      const webhook = rawWebhook ? normalizeDiscordWebhookUrl(rawWebhook) : "";
+      if (rawWebhook && !webhook) {
+        toast.error(t("profile.webhookInvalid"));
+        return;
+      }
+      const next = { ...draft, discordWebhookUrl: webhook };
+      setDraft(next);
+      saveProfile(next);
       if (status === "authenticated") {
         const response = await fetch("/api/me", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(draft),
+          body: JSON.stringify(next),
         });
         if (!response.ok) {
           toast.error(t("profile.saveFail"));
@@ -70,9 +79,9 @@ export function ProfilePanel({
         if (data.profile) {
           saveProfile(data.profile);
           onSaved?.(data.profile);
-        } else onSaved?.(draft);
+        } else onSaved?.(next);
       } else {
-        onSaved?.(draft);
+        onSaved?.(next);
       }
       toast.success(t("profile.saved"));
       onClose();
@@ -136,7 +145,7 @@ export function ProfilePanel({
             <input
               value={draft.discordUrl}
               onChange={(e) => setDraft({ ...draft, discordUrl: e.target.value })}
-              placeholder="https://discord.gg/… или discord.com/users/…"
+              placeholder="https://discord.gg/… / discord.com/users/…"
               className={fieldClass}
               data-testid="profile-discord"
             />
