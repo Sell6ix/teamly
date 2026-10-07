@@ -88,9 +88,9 @@ function makeJoinCode() {
   return code;
 }
 
-function defaultSnapshot(): PartySnapshot {
+function defaultSnapshot(stableCode = true): PartySnapshot {
   return {
-    joinCode: makeJoinCode(),
+    joinCode: stableCode ? "·····" : makeJoinCode(),
     partyName: `Пати ${YOU_NAME}`,
     seats: makeSeats(5),
     joinedParty: null,
@@ -111,8 +111,9 @@ function deserialize(raw: string | null): PartySnapshot | null {
   }
 }
 
-const serverSnapshot = defaultSnapshot();
+const serverSnapshot = defaultSnapshot(true);
 let clientSnapshot: PartySnapshot | null = null;
+let clientReady = false;
 const listeners = new Set<() => void>();
 
 function ensureClientSnapshot(): PartySnapshot {
@@ -121,13 +122,13 @@ function ensureClientSnapshot(): PartySnapshot {
   const saved = deserialize(sessionStorage.getItem(STORAGE_KEY));
   clientSnapshot = saved
     ? {
-        ...defaultSnapshot(),
+        ...defaultSnapshot(true),
         ...saved,
         joinCode: saved.joinCode || makeJoinCode(),
-        lobbyMeta: saved.lobbyMeta ?? defaultSnapshot().lobbyMeta,
+        lobbyMeta: saved.lobbyMeta ?? defaultSnapshot(true).lobbyMeta,
         feedNonce: 0,
       }
-    : defaultSnapshot();
+    : defaultSnapshot(false);
   return clientSnapshot;
 }
 
@@ -137,11 +138,20 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot() {
+  // Keep SSR markup until after mount to avoid join-code hydration mismatch.
+  if (!clientReady) return serverSnapshot;
   return ensureClientSnapshot();
 }
 
 function getServerSnapshot() {
   return serverSnapshot;
+}
+
+function markClientReady() {
+  if (clientReady) return;
+  clientReady = true;
+  ensureClientSnapshot();
+  listeners.forEach((listener) => listener());
 }
 
 function writeSnapshot(next: PartySnapshot) {
@@ -212,6 +222,10 @@ async function syncJoinToServer(snapshot: PartySnapshot) {
 export function PartyProvider({ children }: { children: React.ReactNode }) {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const syncTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    markClientReady();
+  }, []);
 
   const scheduleSync = useCallback((next: PartySnapshot) => {
     if (syncTimer.current) window.clearTimeout(syncTimer.current);
@@ -492,7 +506,15 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     invitedIds,
     partyFull,
     setPartyName: (name) => update({ partyName: name }),
-    setLobbyMeta: (meta) => update({ lobbyMeta: meta }),
+    setLobbyMeta: (meta) => {
+      const current = ensureClientSnapshot();
+      const same =
+        current.lobbyMeta.playStyle === meta.playStyle &&
+        current.lobbyMeta.skill === meta.skill &&
+        current.lobbyMeta.hours.join(",") === meta.hours.join(",");
+      if (same) return;
+      update({ lobbyMeta: meta });
+    },
     ensurePartyForGame,
     invite,
     kick,
