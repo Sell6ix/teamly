@@ -1,3 +1,4 @@
+import { roleFacetFor } from "@/lib/game-fields";
 import { gameById, matchPeople } from "@/lib/matching";
 import { listPublishedParties } from "@/lib/party-store";
 import type { GameId, HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "@/lib/types";
@@ -12,6 +13,11 @@ function isPlayStyle(value: unknown): value is PlayStyle {
 
 function isHour(value: unknown): value is HourWindow {
   return typeof value === "string" && HOURS.includes(value as HourWindow);
+}
+
+function isRoleTag(gameId: GameId, value: unknown): value is string {
+  if (typeof value !== "string" || !value) return false;
+  return Boolean(roleFacetFor(gameId)?.options.some((opt) => opt.id === value));
 }
 
 export async function POST(request: Request) {
@@ -60,14 +66,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const typedGameId = gameId as GameId;
+  const roleTag = isRoleTag(typedGameId, payload.roleTag) ? payload.roleTag : null;
+
   const criteria: MatchCriteria = {
-    gameId: gameId as MatchCriteria["gameId"],
+    gameId: typedGameId,
     playStyle,
     partySize,
     skill: skill as SkillLevel,
     hours,
+    roleTag,
   };
 
-  const published = listPublishedParties(criteria.gameId as GameId);
+  const published = listPublishedParties(typedGameId);
   return NextResponse.json(matchPeople(criteria, published));
 }

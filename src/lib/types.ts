@@ -68,6 +68,8 @@ export type MatchCriteria = {
   partySize: number;
   skill: SkillLevel;
   hours: HourWindow[];
+  /** Game-specific role/line/class tag from lobby chips */
+  roleTag?: string | null;
 };
 
 export type PlayerMatch = {

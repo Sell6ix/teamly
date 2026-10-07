@@ -1,4 +1,5 @@
 import { GameLobby } from "@/components/game-lobby";
+import { playStylesFor } from "@/lib/game-fields";
 import { isPlayStyle } from "@/lib/lobby-url";
 import { gameById } from "@/lib/matching";
 import { notFound } from "next/navigation";
@@ -11,7 +12,9 @@ export default async function GameStylePage({
 }) {
   const { game: gameId, style } = await params;
   const game = gameById(gameId);
-  if (!game || !isPlayStyle(style)) notFound();
+  if (!game || !isPlayStyle(style) || !playStylesFor(game.id).includes(style)) {
+    notFound();
+  }
 
   return (
     <Suspense

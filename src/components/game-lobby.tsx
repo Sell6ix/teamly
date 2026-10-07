@@ -10,6 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { catalogGames } from "@/lib/catalog";
 import {
+  playStylesFor,
+  roleFacetFor,
+  roleOptionLabel,
+  skillLabelFor,
+} from "@/lib/game-fields";
+import {
   filtersToCriteria,
   lobbyHref,
   parseLobbySearchParams,
@@ -21,14 +27,12 @@ import {
   hourLabel,
   partySizeLabel,
   playStyleLabel,
-  skillLabel,
 } from "@/lib/labels";
 import type {
   Game,
   HourWindow,
   MatchResult,
   OpenParty,
-  PlayStyle,
   SkillLevel,
 } from "@/lib/types";
 import {
@@ -46,7 +50,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-const playStyles: PlayStyle[] = ["casual", "ranked", "learning", "voice", "speedrun"];
 const hours: HourWindow[] = ["morning", "day", "evening", "night"];
 
 type FeedState = {
@@ -76,6 +79,8 @@ export function GameLobby({
     () => catalogGames().find((item) => item.id === game.id),
     [game.id],
   );
+  const playStyles = useMemo(() => playStylesFor(game.id), [game.id]);
+  const roleFacet = useMemo(() => roleFacetFor(game.id), [game.id]);
 
   const filters = useMemo(
     () =>
@@ -286,6 +291,28 @@ export function GameLobby({
               ))}
             </ChipRow>
 
+            {roleFacet ? (
+              <ChipRow label={roleFacet.label}>
+                <Chip
+                  active={filters.roleTag === null}
+                  onClick={() => applyFilters({ ...filters, roleTag: null })}
+                  testId="role-any"
+                >
+                  Любая
+                </Chip>
+                {roleFacet.options.map((option) => (
+                  <Chip
+                    key={option.id}
+                    active={filters.roleTag === option.id}
+                    onClick={() => applyFilters({ ...filters, roleTag: option.id })}
+                    testId={`role-${option.id}`}
+                  >
+                    {option.label}
+                  </Chip>
+                ))}
+              </ChipRow>
+            ) : null}
+
             <div className={moreFilters ? "space-y-3" : "hidden sm:block sm:space-y-3"}>
               <ChipRow label="Уровень">
                 {([1, 2, 3, 4, 5] as SkillLevel[]).map((level) => (
@@ -295,7 +322,7 @@ export function GameLobby({
                     onClick={() => applyFilters({ ...filters, skill: level })}
                     testId={`skill-${level}`}
                   >
-                    {skillLabel[level]}
+                    {skillLabelFor(game.id, level)}
                   </Chip>
                 ))}
               </ChipRow>
@@ -321,7 +348,11 @@ export function GameLobby({
             >
               {moreFilters
                 ? "Скрыть фильтры"
-                : `Ещё фильтры · ${skillLabel[filters.skill]} · ${filters.hours.map((h) => hourLabel[h]).join(", ")}`}
+                : `Ещё · ${skillLabelFor(game.id, filters.skill)} · ${filters.hours.map((h) => hourLabel[h]).join(", ")}${
+                    filters.roleTag
+                      ? ` · ${roleOptionLabel(game.id, filters.roleTag) ?? ""}`
+                      : ""
+                  }`}
             </button>
           </div>
 
@@ -510,7 +541,7 @@ function PlayerCard({
             )}
           </h3>
           <p className="mt-1 text-sm text-white/50">
-            {player.role} · {skillLabel[player.skill]}
+            {player.role} · {skillLabelFor(player.gameId, player.skill)}
           </p>
         </div>
         <Button
@@ -577,7 +608,8 @@ function PartyCard({
         <div>
           <h3 className="text-base font-medium text-white">{party.name}</h3>
           <p className="mt-1 text-sm text-white/50">
-            {party.leader} · {playStyleLabel[party.playStyle]} · {skillLabel[party.skill]}
+            {party.leader} · {playStyleLabel[party.playStyle]} ·{" "}
+            {skillLabelFor(party.gameId, party.skill)}
           </p>
         </div>
         <span className="inline-flex items-center gap-1 rounded-md bg-[var(--game-accent,var(--brand))]/15 px-2 py-1 text-xs text-white/90">

@@ -1,5 +1,11 @@
 import { games, openParties, players } from "./data";
-import { hourLabel, playStyleLabel, skillLabel } from "./labels";
+import {
+  playerHasRoleTag,
+  roleFacetFor,
+  roleOptionLabel,
+  skillLabelFor,
+} from "./game-fields";
+import { hourLabel, playStyleLabel } from "./labels";
 import type {
   Game,
   MatchCriteria,
@@ -46,9 +52,10 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     reasons.push("Стиль близкий, не идеальный");
   }
 
+  const skillName = skillLabelFor(criteria.gameId, player.skill);
   score += Math.max(0, 22 - rankGap * 9);
-  if (rankGap === 0) reasons.push(`Уровень совпал: ${skillLabel[player.skill].toLowerCase()}`);
-  else reasons.push(`Рядом по уровню (${skillLabel[player.skill]})`);
+  if (rankGap === 0) reasons.push(`Уровень совпал: ${skillName}`);
+  else reasons.push(`Рядом по уровню (${skillName})`);
 
   score += hours.length * 8;
   reasons.push(`Онлайн: ${hours.map((h) => hourLabel[h].toLowerCase()).join(", ")}`);
@@ -70,9 +77,20 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     reasons.push("Сейчас в сети");
   }
 
+  if (criteria.roleTag) {
+    if (playerHasRoleTag(player, criteria.roleTag)) {
+      score += 16;
+      const label = roleOptionLabel(criteria.gameId, criteria.roleTag);
+      reasons.unshift(label ? `Роль: ${label}` : "Нужная роль");
+    } else {
+      // Soft miss: keep in list but push down
+      score -= 18;
+    }
+  }
+
   return {
     player,
-    score: Math.min(99, Math.round(score)),
+    score: Math.min(99, Math.max(1, Math.round(score))),
     reasons,
   };
 }
@@ -100,6 +118,18 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
   if (party.micRequired && criteria.playStyle === "voice") {
     score += 6;
     reasons.push("Голосовой сбор");
+  }
+
+  if (criteria.roleTag) {
+    const option = roleFacetFor(criteria.gameId)?.options.find(
+      (item) => item.id === criteria.roleTag,
+    );
+    const hay = `${party.name} ${party.note}`.toLowerCase();
+    const mentions = option?.keywords.some((keyword) => hay.includes(keyword.toLowerCase()));
+    if (mentions && option) {
+      score += 10;
+      reasons.push(`Ищут: ${option.label}`);
+    }
   }
 
   return {

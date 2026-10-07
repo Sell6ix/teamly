@@ -1,3 +1,4 @@
+import { playStylesFor, roleFacetFor } from "./game-fields";
 import type { Game, HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "./types";
 import { HOURS, PLAY_STYLES, SKILL_LEVELS } from "./types";
 
@@ -6,14 +7,17 @@ export type LobbyFilters = {
   partySize: number;
   skill: SkillLevel;
   hours: HourWindow[];
+  roleTag: string | null;
 };
 
 export function defaultLobbyFilters(game: Game): LobbyFilters {
+  const styles = playStylesFor(game.id);
   return {
-    playStyle: "ranked",
+    playStyle: styles.includes("ranked") ? "ranked" : styles[0],
     partySize: game.partySizes.includes(5) ? 5 : game.partySizes[0],
     skill: 4,
     hours: ["evening"],
+    roleTag: null,
   };
 }
 
@@ -27,9 +31,12 @@ export function parseLobbySearchParams(
   pathStyle?: string | null,
 ): LobbyFilters {
   const defaults = defaultLobbyFilters(game);
+  const allowedStyles = playStylesFor(game.id);
   const styleRaw = pathStyle && isPlayStyle(pathStyle) ? pathStyle : params.get("style");
   const playStyle =
-    styleRaw && isPlayStyle(styleRaw) ? styleRaw : defaults.playStyle;
+    styleRaw && isPlayStyle(styleRaw) && allowedStyles.includes(styleRaw)
+      ? styleRaw
+      : defaults.playStyle;
 
   const sizeRaw = Number(params.get("size"));
   const partySize = game.partySizes.includes(sizeRaw) ? sizeRaw : defaults.partySize;
@@ -49,7 +56,12 @@ export function parseLobbySearchParams(
     if (parsed.length) hours = parsed;
   }
 
-  return { playStyle, partySize, skill, hours };
+  const roleRaw = params.get("role");
+  const facet = roleFacetFor(game.id);
+  const roleTag =
+    roleRaw && facet?.options.some((opt) => opt.id === roleRaw) ? roleRaw : null;
+
+  return { playStyle, partySize, skill, hours, roleTag };
 }
 
 /** Query params only (style lives in `/g/{game}/{style}` when using the alias). */
@@ -68,6 +80,7 @@ export function lobbyFiltersToParams(
   const hoursKey = filters.hours.slice().sort().join(",");
   const defaultHoursKey = defaults.hours.slice().sort().join(",");
   if (hoursKey !== defaultHoursKey) params.set("hours", filters.hours.join(","));
+  if (filters.roleTag) params.set("role", filters.roleTag);
   return params;
 }
 
@@ -85,5 +98,6 @@ export function filtersToCriteria(gameId: Game["id"], filters: LobbyFilters): Ma
     partySize: filters.partySize,
     skill: filters.skill,
     hours: filters.hours.length ? filters.hours : ["evening"],
+    roleTag: filters.roleTag,
   };
 }
