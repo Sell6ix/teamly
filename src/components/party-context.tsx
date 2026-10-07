@@ -391,6 +391,9 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         },
       });
       toast.success(`Вы в сборе «${party.name}»`);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("teamly:open-tray"));
+      }
     },
     [commit],
   );

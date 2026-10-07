@@ -43,9 +43,12 @@ export function PartyTray() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
+  // Open only on fresh join — not every lobby mount while still in a gathering.
   useEffect(() => {
-    if (joinedParty) setMobileOpen(true);
-  }, [joinedParty?.id]);
+    const open = () => setMobileOpen(true);
+    window.addEventListener("teamly:open-tray", open);
+    return () => window.removeEventListener("teamly:open-tray", open);
+  }, []);
   const [looking, setLooking] = useState(false);
   const [note, setNote] = useState("");
   const [startsAt, setStartsAt] = useState("сегодня 21:00");
@@ -365,13 +368,13 @@ export function PartyTray() {
         </div>
       </aside>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:hidden">
         {!mobileOpen ? (
           <button
             type="button"
             data-testid="party-sheet-toggle"
             onClick={() => setMobileOpen(true)}
-            className="mx-3 mb-3 flex w-[calc(100%-1.5rem)] items-center justify-between rounded-2xl border border-white/12 bg-[#121214]/95 px-4 py-3 text-left shadow-[0_-8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+            className="pointer-events-auto mx-3 mb-3 flex w-[calc(100%-1.5rem)] items-center justify-between rounded-2xl border border-white/12 bg-[#121214]/95 px-4 py-3 text-left shadow-[0_-8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl"
           >
             <span>
               <span className="block font-display text-base text-white">
@@ -384,7 +387,15 @@ export function PartyTray() {
             </span>
           </button>
         ) : (
-          <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border border-white/12 bg-[#121214] p-4 shadow-[0_-16px_50px_rgba(0,0,0,0.55)]">
+          <div className="pointer-events-auto max-h-[75vh] overflow-y-auto rounded-t-3xl border border-white/12 bg-[#121214] p-4 shadow-[0_-16px_50px_rgba(0,0,0,0.55)]">
+            <button
+              type="button"
+              className="mb-3 w-full text-left text-xs text-white/45"
+              onClick={() => setMobileOpen(false)}
+              data-testid="party-sheet-close"
+            >
+              Свернуть трей
+            </button>
             {body}
           </div>
         )}
