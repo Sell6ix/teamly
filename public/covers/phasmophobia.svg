@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Phasmophobia">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#050810"/>
+      <stop offset="55%" stop-color="#0d1a2e"/>
+      <stop offset="100%" stop-color="#1e4d6b"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <ellipse cx="200" cy="240" rx="70" ry="100" fill="#7eb8d4" opacity="0.12"/>
+  <path d="M160 280 Q200 140 240 280 Q200 320 160 280 Z" fill="#a8d4e8" opacity="0.35"/>
+  <text x="24" y="520" fill="#d6eef8" font-family="Georgia, serif" font-size="30" font-weight="700">PHASMOPHOBIA</text>
+</svg>

@@ -23,7 +23,11 @@ export type GameId =
   | "drg"
   | "lol"
   | "dbd"
-  | "it-takes-two";
+  | "it-takes-two"
+  | "lethalcompany"
+  | "phasmophobia"
+  | "l4d2"
+  | "remnant2";
 
 export type Game = {
   id: GameId;
@@ -46,6 +50,8 @@ export type Player = {
   online: boolean;
   bio: string;
   timezone: string;
+  /** Public Steam profile URL when the player shared one */
+  steamProfileUrl?: string | null;
 };
 
 export type OpenParty = {

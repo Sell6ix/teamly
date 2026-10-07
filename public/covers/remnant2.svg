@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Remnant II">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c1018"/>
+      <stop offset="55%" stop-color="#1a2438"/>
+      <stop offset="100%" stop-color="#3d6b8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <circle cx="280" cy="180" r="100" fill="#5a9bb8" opacity="0.2"/>
+  <polygon points="200,120 260,280 140,280" fill="#8ec4d8" opacity="0.3"/>
+  <text x="28" y="520" fill="#d8eef6" font-family="Georgia, serif" font-size="34" font-weight="700">REMNANT II</text>
+</svg>

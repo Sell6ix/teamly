@@ -79,12 +79,12 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
 
   if (criteria.roleTag) {
     if (playerHasRoleTag(player, criteria.roleTag)) {
-      score += 16;
+      score += 28;
       const label = roleOptionLabel(criteria.gameId, criteria.roleTag);
       reasons.unshift(label ? `Роль: ${label}` : "Нужная роль");
     } else {
-      // Soft miss: keep in list but push down
-      score -= 18;
+      // Soft miss: keep in list but push well below role hits
+      score -= 32;
     }
   }
 
@@ -143,10 +143,18 @@ export function matchPeople(
   criteria: MatchCriteria,
   extraParties: OpenParty[] = [],
 ): MatchResult {
+  const roleTag = criteria.roleTag ?? null;
   const playerMatches = players
     .map((player) => scorePlayer(player, criteria))
     .filter((row): row is PlayerMatch => row !== null)
-    .sort((a, b) => b.score - a.score || Number(b.player.online) - Number(a.player.online));
+    .sort((a, b) => {
+      if (roleTag) {
+        const aRole = playerHasRoleTag(a.player, roleTag) ? 1 : 0;
+        const bRole = playerHasRoleTag(b.player, roleTag) ? 1 : 0;
+        if (aRole !== bRole) return bRole - aRole;
+      }
+      return b.score - a.score || Number(b.player.online) - Number(a.player.online);
+    });
 
   const byId = new Map<string, OpenParty>();
   for (const party of [...openParties, ...extraParties]) {

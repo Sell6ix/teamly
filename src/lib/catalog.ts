@@ -30,6 +30,10 @@ export function coverGradient(gameId: GameId): string {
     lol: ["#1a150c", "#c8aa6e"],
     dbd: ["#1a0505", "#e10600"],
     "it-takes-two": ["#0f1a22", "#3d8bfd"],
+    lethalcompany: ["#0a120a", "#6b8f3c"],
+    phasmophobia: ["#050810", "#1e4d6b"],
+    l4d2: ["#140805", "#8b2e0e"],
+    remnant2: ["#0c1018", "#3d6b8a"],
   };
   const [from, to] = accents[gameId];
   return `linear-gradient(155deg, ${from} 0%, ${to} 100%)`;

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Left 4 Dead 2">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#140805"/>
+      <stop offset="50%" stop-color="#3a1408"/>
+      <stop offset="100%" stop-color="#8b2e0e"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <path d="M80 420 L200 100 L220 100 L100 420 Z" fill="#ff6a2a" opacity="0.55"/>
+  <path d="M220 420 L300 180 L340 180 L260 420 Z" fill="#ffb080" opacity="0.25"/>
+  <text x="28" y="500" fill="#ffe0c8" font-family="Georgia, serif" font-size="32" font-weight="700">LEFT 4 DEAD 2</text>
+</svg>

@@ -86,7 +86,7 @@ export const gameFields: Record<GameId, GameFields> = {
   apex: {
     playStyles: ["casual", "ranked", "learning", "voice"],
     skillLabels: {
-      1: "Рookie–Bronze",
+      1: "Rookie–Bronze",
       2: "Silver–Gold",
       3: "Platinum",
       4: "Diamond",
@@ -178,6 +178,81 @@ export const gameFields: Record<GameId, GameFields> = {
       3: "Проходили",
       4: "Ищем всё",
       5: "Спидран-вайб",
+    },
+  },
+  lethalcompany: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый контракт",
+      2: "Знаю двери",
+      3: "Квоты без паники",
+      4: "Опытный",
+      5: "Моод-раннер",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "scout", label: "Разведка", keywords: ["развед", "scout", "фонарик"] },
+        { id: "loot", label: "Лут", keywords: ["лут", "scrap", "квота"] },
+        { id: "driver", label: "Пилот", keywords: ["пилот", "ship", "корабл"] },
+        { id: "newbie", label: "Новичок", keywords: ["новичок", "первый"] },
+      ],
+    },
+  },
+  phasmophobia: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Amateur",
+      2: "Intermediate",
+      3: "Professional",
+      4: "Nightmare",
+      5: "Insanity",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "evidence", label: "Улики", keywords: ["улик", "evidence", "emf", "термо"] },
+        { id: "hunt", label: "Охота", keywords: ["охот", "hunt", "crucifix"] },
+        { id: "tech", label: "Техника", keywords: ["камера", "датчик", "tech"] },
+        { id: "newbie", label: "Новичок", keywords: ["новичок", "первый"] },
+      ],
+    },
+  },
+  l4d2: {
+    playStyles: ["casual", "ranked", "learning", "voice"],
+    skillLabels: {
+      1: "Easy",
+      2: "Normal",
+      3: "Advanced",
+      4: "Expert",
+      5: "Realism / Versus",
+    },
+    roleFacet: {
+      label: "Фокус",
+      options: [
+        { id: "survivor", label: "Выживший", keywords: ["выживш", "survivor", "campaign"] },
+        { id: "infected", label: "Заражённый", keywords: ["зараж", "infected", "versus", "tank"] },
+        { id: "support", label: "Медик", keywords: ["медик", "хил", "аптеч"] },
+      ],
+    },
+  },
+  remnant2: {
+    playStyles: ["casual", "ranked", "learning", "voice"],
+    skillLabels: {
+      1: "Survivor",
+      2: "Veteran",
+      3: "Nightmare",
+      4: "Apocalypse",
+      5: "Hardcore",
+    },
+    roleFacet: {
+      label: "Архетип",
+      options: [
+        { id: "tank", label: "Танк", keywords: ["танк", "handler", "challenger"] },
+        { id: "dps", label: "ДПС", keywords: ["дпс", "gunslinger", "hunter", "damage"] },
+        { id: "support", label: "Саппорт", keywords: ["саппорт", "medic", "хил"] },
+        { id: "explorer", label: "Исследователь", keywords: ["исследова", "секрет", "explorer"] },
+      ],
     },
   },
 };

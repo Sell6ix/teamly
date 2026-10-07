@@ -37,6 +37,7 @@ import type {
 } from "@/lib/types";
 import {
   AlertCircle,
+  ExternalLink,
   Link2,
   Mic,
   MicOff,
@@ -539,6 +540,18 @@ function PlayerCard({
             ) : (
               <span className="text-[11px] text-white/40">Офлайн</span>
             )}
+            {player.steamProfileUrl ? (
+              <a
+                href={player.steamProfileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-normal text-[#8fbcff] transition hover:border-[#8fbcff]/40 hover:bg-[#8fbcff]/10"
+                onClick={(event) => event.stopPropagation()}
+              >
+                Steam
+                <ExternalLink className="size-3" />
+              </a>
+            ) : null}
           </h3>
           <p className="mt-1 text-sm text-white/50">
             {player.role} · {skillLabelFor(player.gameId, player.skill)}

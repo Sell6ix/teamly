@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
 import { YOU_NAME } from "@/lib/data";
-import { Check, Copy, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 function subscribeNoop() {
@@ -94,9 +94,21 @@ export function PartyTray() {
             ) : null}
             {seat.kind === "player" ? (
               <>
-                <span className="text-sm">
+                <span className="min-w-0 text-sm">
                   <span className="font-medium text-white">{seat.player.name}</span>
                   <span className="ml-2 text-xs text-white/40">{seat.player.role}</span>
+                  {seat.player.steamProfileUrl ? (
+                    <a
+                      href={seat.player.steamProfileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 inline-flex items-center gap-0.5 text-[11px] text-[#8fbcff] hover:underline"
+                      title="Профиль Steam"
+                    >
+                      Steam
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : null}
                 </span>
                 {!joinedParty ? (
                   <Button type="button" size="xs" variant="ghost" onClick={() => kick(seat.player.id)}>
@@ -163,6 +175,14 @@ export function PartyTray() {
           </Button>
         ) : null}
 
+        {!ready && canConfirm ? (
+          <p className="rounded-lg border border-[var(--brand)]/25 bg-[var(--brand)]/10 px-3 py-2 text-[11px] leading-4 text-[var(--brand)]">
+            {full
+              ? "Состав полный — подтвердите, и можно заходить в игру."
+              : `Уже ${filledCount} из ${seats.length}. Можно подтвердить сейчас или добрать слоты.`}
+          </p>
+        ) : null}
+
         <Button
           type="button"
           size="lg"
@@ -186,7 +206,7 @@ export function PartyTray() {
         {ready ? (
           <p className="flex items-center gap-1 text-xs text-emerald-300">
             <Check className="size-3" />
-            Состав зафиксирован. Зовите людей в клиент игры.
+            Состав зафиксирован. Зовите людей в клиент игры по Steam или инвайту.
           </p>
         ) : null}
       </div>
