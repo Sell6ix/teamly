@@ -1,7 +1,7 @@
 "use client";
 
 import { isBlocked } from "@/lib/blacklist";
-import { youName } from "@/lib/demo-locale";
+import { resolveYouDisplayName, youName } from "@/lib/demo-locale";
 import { readStoredLocale, tStored } from "@/lib/i18n/context";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { languageLabel, loadProfile } from "@/lib/profile";
@@ -556,9 +556,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             hours: current.lobbyMeta.hours,
             accountId: session?.user?.id || profile.accountId || "you",
             name:
-              profile.displayName ||
-              session?.user?.name ||
-              youName(readStoredLocale()),
+              resolveYouDisplayName(
+                profile.displayName || session?.user?.name,
+                readStoredLocale(),
+              ),
             role: options?.role || tStored("party.lookingRole"),
             bio: options?.bio || tStored("party.lookingBio"),
             region: profile.region,
@@ -598,7 +599,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     const names = current.seats
       .map((seat) => {
         if (seat.kind === "you") {
-          return profile.displayName || youName(readStoredLocale());
+          return resolveYouDisplayName(profile.displayName, readStoredLocale());
         }
         if (seat.kind === "player") return seat.player.name;
         return null;

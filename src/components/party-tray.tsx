@@ -5,7 +5,7 @@ import { ProfileLinks } from "@/components/profile-links";
 import { useLocale, useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
-import { youName } from "@/lib/demo-locale";
+import { resolveYouDisplayName } from "@/lib/demo-locale";
 import {
   lfpTemplatesFor,
   loadProfile,
@@ -151,7 +151,7 @@ export function PartyTray() {
               {seat.kind === "you" ? (
                 <span className="min-w-0 text-sm leading-tight">
                   <span className="font-medium text-white">
-                    {youProfile.displayName || youName(locale)}
+                    {resolveYouDisplayName(youProfile.displayName, locale)}
                   </span>{" "}
                   <span className="text-[11px] text-white/40">{t("tray.you")}</span>
                   <div className="mt-0.5">

@@ -1,6 +1,13 @@
-import type { Locale } from "./i18n/messages";
+import { youName } from "./demo-locale";
+import { UI_LOCALE_KEY, type Locale } from "./i18n/messages";
 import type { Language, Region, VoicePlatform } from "./types";
 import { LANGUAGES } from "./types";
+
+function storedUiLocale(): Locale {
+  if (typeof window === "undefined") return "ru";
+  const raw = window.localStorage.getItem(UI_LOCALE_KEY);
+  return raw === "en" ? "en" : "ru";
+}
 
 export type { Language, Region, VoicePlatform };
 export { LANGUAGES };
@@ -49,7 +56,7 @@ export const PROFILE_STORAGE_KEY = "teamly-profile-v1";
 export function defaultProfile(): UserProfile {
   return {
     accountId: "",
-    displayName: "Иван",
+    displayName: youName(storedUiLocale()),
     steamProfileUrl: "",
     discordUrl: "",
     riotTag: "",

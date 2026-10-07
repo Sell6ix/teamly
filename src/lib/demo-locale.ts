@@ -69,6 +69,7 @@ export const playerEn: Record<string, { name: string; role: string; bio: string 
 };
 
 export const partyEn: Record<string, { name: string; leader: string; note: string }> = {
+  "demo1": {"name":"Ivan's demo party","leader":"Ivan","note":"Demo gathering to check the join link across browsers."},
   "g1": {"name":"Immo no tilt","leader":"Kira_Neon","note":"Need smoke and initiator. Voice on, no sarcasm in comms."},
   "g2": {"name":"Night casual","leader":"Omen_quiet","note":"Two games then bed. Unrated OK."},
   "g3": {"name":"7k+ party","leader":"PudgePrime","note":"Support and carry open. Post-loss review required."},
@@ -105,6 +106,7 @@ export const gameNameEn: Partial<Record<GameId, string>> = {
 };
 
 const nameRuToEn: Record<string, string> = {
+  "Иван": "Ivan",
   "Кира_Neon": "Kira_Neon",
   "SovaDad": "SovaDad",
   "Omen_тихий": "Omen_quiet",
@@ -214,4 +216,13 @@ export function localizeStartsAt(
 
 export function youName(locale: Locale = "ru"): string {
   return locale === "en" ? "Ivan" : "Иван";
+}
+
+/** Map default demo host nick to the active UI locale. */
+export function resolveYouDisplayName(
+  stored: string | null | undefined,
+  locale: Locale = "ru",
+): string {
+  if (!stored || stored === "Иван" || stored === "Ivan") return youName(locale);
+  return stored;
 }

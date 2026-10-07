@@ -87,7 +87,7 @@ export function PeopleDirectory({
             <option value="all">{t("people.allGames")}</option>
             {games.map((game) => (
               <option key={game.id} value={game.id}>
-                {game.name}
+                {gameName(game.id, locale)}
               </option>
             ))}
           </select>

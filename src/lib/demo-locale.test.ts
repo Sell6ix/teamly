@@ -28,6 +28,28 @@ describe("demo locale overlays", () => {
     expect(youName("en")).toBe("Ivan");
   });
 
+  it("localizes the published DEMO1 party", () => {
+    const demo = {
+      id: "demo1",
+      name: "Демо-пати Ивана",
+      gameId: "valorant" as const,
+      playStyle: "ranked" as const,
+      partySize: 5,
+      filled: 1,
+      skill: 4 as const,
+      hours: ["evening" as const],
+      micRequired: true,
+      leader: "Иван",
+      note: "Демо-сбор для проверки ссылки между браузерами.",
+      startsAt: "сегодня 21:00",
+    };
+    const en = localizeParty(demo, "en");
+    expect(en.name).toBe("Ivan's demo party");
+    expect(en.leader).toBe("Ivan");
+    expect(en.note).not.toMatch(cyrillic);
+    expect(en.startsAt).toBe("today 21:00");
+  });
+
   it("strips Cyrillic from localized players and parties", () => {
     const player = localizePlayer(players.find((p) => p.id === "p1")!, "en");
     expect(player.name).toBe("Kira_Neon");

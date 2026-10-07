@@ -1,5 +1,9 @@
 import { games, openParties, players } from "./data";
-import { localizeParty, localizePlayer } from "./demo-locale";
+import {
+  localizeParty,
+  localizePlayer,
+  localizeStartsAt,
+} from "./demo-locale";
 import {
   playerHasRoleTag,
   roleFacetFor,
@@ -237,7 +241,11 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
 
   if (party.startsAt) {
     score += 4;
-    reasons.unshift(t(criteria, "reason.starts", { when: party.startsAt }));
+    reasons.unshift(
+      t(criteria, "reason.starts", {
+        when: localizeStartsAt(party.startsAt, locale) ?? party.startsAt,
+      }),
+    );
   }
 
   if (criteria.region && party.region) {
