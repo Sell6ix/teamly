@@ -64,6 +64,35 @@ describe("scorePlayer", () => {
     expect(result.players.length).toBeGreaterThan(0);
     expect(result.parties.some((row) => row.party.partySize === 8)).toBe(true);
   });
+
+  it("still shows a nearby bunker table when size is 10", () => {
+    const result = matchPeople({ ...bunkerCasual, partySize: 10 });
+    expect(result.parties.some((row) => row.party.partySize === 8)).toBe(true);
+  });
+
+  it("includes extra looking players", () => {
+    const extra = {
+      ...players[0]!,
+      id: "you-valorant",
+      gameId: "valorant" as const,
+      playStyles: ["ranked" as const],
+      skill: 4 as const,
+      hours: ["evening" as const],
+      lookingForSize: 5,
+    };
+    const result = matchPeople(
+      {
+        gameId: "valorant",
+        playStyle: "ranked",
+        partySize: 5,
+        skill: 4,
+        hours: ["evening"],
+      },
+      [],
+      [extra],
+    );
+    expect(result.players.some((row) => row.player.id === "you-valorant")).toBe(true);
+  });
 });
 
 describe("cross-game person", () => {

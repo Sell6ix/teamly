@@ -4,6 +4,7 @@ import type {
   HourWindow,
   OpenParty,
   PlayStyle,
+  Player,
   Region,
   SkillLevel,
   VoicePlatform,
@@ -39,6 +40,7 @@ export type JoinSession = {
 type Store = {
   joins: Map<string, JoinSession>;
   published: Map<string, OpenParty>;
+  looking: Map<string, Player>;
 };
 
 const globalForStore = globalThis as typeof globalThis & {
@@ -50,8 +52,12 @@ function store(): Store {
     globalForStore.__teamlyPartyStore = {
       joins: new Map(),
       published: new Map(),
+      looking: new Map(),
     };
     seedDemo(globalForStore.__teamlyPartyStore);
+  }
+  if (!globalForStore.__teamlyPartyStore.looking) {
+    globalForStore.__teamlyPartyStore.looking = new Map();
   }
   return globalForStore.__teamlyPartyStore;
 }
@@ -107,6 +113,10 @@ export function sessionToOpenParty(session: JoinSession): OpenParty {
     startsAt: session.startsAt ?? null,
     region: session.region,
     voicePlatform: session.voicePlatform,
+    members: session.seats
+      .filter((seat) => seat.kind !== "empty")
+      .map((seat) => seat.name)
+      .filter(Boolean),
   };
 }
 
@@ -188,6 +198,24 @@ export function publishedCounts(): Record<string, number> {
   for (const party of store().published.values()) {
     if (party.filled >= party.partySize) continue;
     counts[party.gameId] = (counts[party.gameId] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function upsertLooking(player: Player): Player {
+  store().looking.set(player.id, player);
+  return player;
+}
+
+export function listLooking(gameId?: GameId): Player[] {
+  const all = [...store().looking.values()];
+  return gameId ? all.filter((player) => player.gameId === gameId) : all;
+}
+
+export function lookingCounts(): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const player of store().looking.values()) {
+    counts[player.gameId] = (counts[player.gameId] ?? 0) + 1;
   }
   return counts;
 }

@@ -40,6 +40,7 @@ type PartySnapshot = {
   ready: boolean;
   gameId: GameId | null;
   published: boolean;
+  lookingPosted: boolean;
   lobbyMeta: LobbyMeta;
   feedNonce: number;
 };
@@ -72,6 +73,9 @@ type PartyContextValue = {
   }) => Promise<OpenParty | null>;
   shareUrl: string;
   copyShareLink: (prefer?: "auto" | "share" | "copy") => Promise<void>;
+  publishLooking: (options?: { bio?: string; role?: string }) => Promise<boolean>;
+  lookingPosted: boolean;
+  copyReadyBrief: () => Promise<void>;
   bumpFeed: () => void;
 };
 
@@ -103,6 +107,7 @@ function defaultSnapshot(stableCode = true): PartySnapshot {
     ready: false,
     gameId: null,
     published: false,
+    lookingPosted: false,
     lobbyMeta: { playStyle: "ranked", skill: 4, hours: ["evening"] },
     feedNonce: 0,
   };
@@ -131,6 +136,7 @@ function ensureClientSnapshot(): PartySnapshot {
         ...defaultSnapshot(true),
         ...saved,
         joinCode: saved.joinCode || makeJoinCode(),
+        lookingPosted: saved.lookingPosted === true,
         lobbyMeta: saved.lobbyMeta ?? defaultSnapshot(true).lobbyMeta,
         feedNonce: 0,
       }
@@ -332,9 +338,16 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
   const joinParty = useCallback(
     (party: OpenParty) => {
       if (party.filled >= party.partySize) return;
-      const placeholders: Player[] = Array.from({ length: party.filled }, (_, index) => ({
+      const names =
+        party.members && party.members.length > 0
+          ? party.members.slice(0, party.filled)
+          : [
+              party.leader,
+              ...Array.from({ length: Math.max(0, party.filled - 1) }, (_, index) => `Участник ${index + 2}`),
+            ];
+      const placeholders: Player[] = names.map((name, index) => ({
         id: `slot-${party.id}-${index}`,
-        name: index === 0 ? party.leader : `Игрок ${index + 1}`,
+        name,
         gameId: party.gameId,
         playStyles: [party.playStyle],
         skill: party.skill,
@@ -490,6 +503,92 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     }
   }, [commit]);
 
+  const publishLooking = useCallback(
+    async (options?: { bio?: string; role?: string }) => {
+      const current = ensureClientSnapshot();
+      if (!current.gameId) {
+        toast.error("Сначала зайдите в лобби игры.");
+        return false;
+      }
+      const profile = loadProfile();
+      try {
+        const response = await fetch("/api/looking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId: current.gameId,
+            playStyle: current.lobbyMeta.playStyle,
+            partySize: current.seats.length,
+            skill: current.lobbyMeta.skill,
+            hours: current.lobbyMeta.hours,
+            name: profile.displayName || YOU_NAME,
+            role: options?.role || "Ищу пати",
+            bio: options?.bio || "Ищу пати по фильтрам лобби. Можно писать в Discord.",
+            region: profile.region,
+            voicePlatform: profile.voicePlatform,
+            steamProfileUrl: profile.steamProfileUrl || null,
+            discordUrl: profile.discordUrl || null,
+            riotTag: profile.riotTag || null,
+            faceitUrl: profile.faceitUrl || null,
+          }),
+        });
+        const data = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          toast.error(data.error ?? "Не удалось выставить «ищу».");
+          return false;
+        }
+        const after = ensureClientSnapshot();
+        commit({
+          ...after,
+          lookingPosted: true,
+          feedNonce: after.feedNonce + 1,
+        });
+        toast.success("Вы в ленте игроков");
+        return true;
+      } catch {
+        toast.error("Сеть недоступна — карточка не опубликована.");
+        return false;
+      }
+    },
+    [commit],
+  );
+
+  const copyReadyBrief = useCallback(async () => {
+    const current = ensureClientSnapshot();
+    await syncJoinToServer(current);
+    const profile = loadProfile();
+    const names = current.seats
+      .map((seat) => {
+        if (seat.kind === "you") return profile.displayName || YOU_NAME;
+        if (seat.kind === "player") return seat.player.name;
+        return null;
+      })
+      .filter((name): name is string => Boolean(name));
+    const url = `${window.location.origin}/join/${current.joinCode}`;
+    const lines = [
+      `${current.partyName} готова`,
+      names.join(", "),
+      current.joinedParty?.startsAt ? `Старт: ${current.joinedParty.startsAt}` : null,
+      `Ссылка: ${url}`,
+      profile.discordUrl ? `Discord: ${profile.discordUrl}` : null,
+      profile.steamProfileUrl ? `Steam: ${profile.steamProfileUrl}` : null,
+    ].filter(Boolean);
+    const text = lines.join("\n");
+    try {
+      const mode = await shareOrCopy({
+        title: current.partyName,
+        text,
+        url,
+      });
+      await navigator.clipboard.writeText(text).catch(() => undefined);
+      if (mode === "copied") toast.success("Бриф пати скопирован — кидайте в чат");
+      else toast.success("Можно звать в клиент. Бриф скопирован.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Не удалось скопировать бриф");
+    }
+  }, []);
+
   const copyShareLink = useCallback(async (prefer: "auto" | "share" | "copy" = "auto") => {
     const current = ensureClientSnapshot();
     await syncJoinToServer(current);
@@ -546,6 +645,9 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     loadJoinCode,
     applyOpenParty,
     publishOpenParty,
+    publishLooking,
+    lookingPosted: snapshot.lookingPosted === true,
+    copyReadyBrief,
     shareUrl:
       typeof window !== "undefined"
         ? `${window.location.origin}/join/${snapshot.joinCode}`

@@ -438,11 +438,15 @@ export function GameLobby({
                 onRelax={() =>
                   applyFilters({
                     ...filters,
-                    playStyle: "casual",
+                    playStyle: playStyles.includes("casual") ? "casual" : playStyles[0],
                     hours: ["evening", "night"],
+                    roleTag: null,
+                    region: null,
+                    voicePlatform: null,
                   })
                 }
                 onPublish={() => void party.publishOpenParty()}
+                onLooking={() => void party.publishLooking()}
               />
             ) : (
               <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
@@ -585,17 +589,22 @@ function LoadingState() {
 function EmptyLobby({
   onRelax,
   onPublish,
+  onLooking,
 }: {
   onRelax: () => void;
   onPublish: () => void;
+  onLooking: () => void;
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-6">
       <p className="font-display text-xl text-white">Сейчас тихо</p>
       <p className="mt-2 max-w-lg text-sm leading-6 text-white/55">
-        Под эти чипы никто не ищет. Откройте свой сбор в ленте или ослабьте фильтры.
+        Под эти чипы пока пусто. Выставьте себя в ленту, откройте сбор или ослабьте фильтры.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
+        <Button type="button" data-testid="empty-looking" onClick={onLooking}>
+          Я ищу
+        </Button>
         <Button type="button" data-testid="empty-publish" onClick={onPublish}>
           Открыть сбор
         </Button>
@@ -618,6 +627,7 @@ function PlayerCard({
   disabled: boolean;
   onInvite: () => void;
 }) {
+  const isYou = row.player.id.startsWith("you-");
   const { player, score, reasons } = row;
   return (
     <article className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition hover:border-white/16">
@@ -654,16 +664,22 @@ function PlayerCard({
             </p>
           ) : null}
         </div>
-        <Button
-          type="button"
-          size="lg"
-          data-testid="invite-button"
-          disabled={disabled || invited}
-          onClick={onInvite}
-        >
-          <UserPlus data-icon="inline-start" />
-          {invited ? "В пати" : "Пригласить"}
-        </Button>
+        {isYou ? (
+          <span className="rounded-md bg-[var(--brand)]/15 px-2 py-1 text-xs text-[var(--brand)]">
+            это вы
+          </span>
+        ) : (
+          <Button
+            type="button"
+            size="lg"
+            data-testid="invite-button"
+            disabled={disabled || invited}
+            onClick={onInvite}
+          >
+            <UserPlus data-icon="inline-start" />
+            {invited ? "В пати" : "Пригласить"}
+          </Button>
+        )}
       </div>
       <p className="mt-3 text-sm text-white/60">{reasons[0]}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-white/40">

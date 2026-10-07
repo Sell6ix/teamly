@@ -5,6 +5,7 @@ import {
   listPublishedParties,
   normalizeCode,
   publishSession,
+  lookingCounts,
   publishedCounts,
   upsertJoinSession,
 } from "@/lib/party-store";
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const gameId = searchParams.get("gameId");
   if (searchParams.get("counts") === "1") {
-    return NextResponse.json({ counts: publishedCounts() });
+    return NextResponse.json({ counts: publishedCounts(), looking: lookingCounts() });
   }
   if (gameId && !gameById(gameId)) {
     return NextResponse.json({ error: "Неизвестная игра." }, { status: 400 });

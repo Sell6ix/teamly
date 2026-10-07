@@ -98,6 +98,8 @@ export type OpenParty = {
   startsAt?: string | null;
   region?: Region;
   voicePlatform?: VoicePlatform;
+  /** Real names already in the gathering (join is not dummy slots) */
+  members?: string[];
 };
 
 export type MatchCriteria = {

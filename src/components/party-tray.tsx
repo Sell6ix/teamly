@@ -35,13 +35,19 @@ export function PartyTray() {
     copyShareLink,
     published,
     publishOpenParty,
+    publishLooking,
+    lookingPosted,
+    copyReadyBrief,
     gameId,
   } = useParty();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [looking, setLooking] = useState(false);
   const [note, setNote] = useState("");
   const [startsAt, setStartsAt] = useState("сегодня 21:00");
   const [templateId, setTemplateId] = useState<string | null>(null);
+  const [showLfp, setShowLfp] = useState(false);
+  const [showAllSeats, setShowAllSeats] = useState(false);
   const canNativeShare = useSyncExternalStore(subscribeNoop, getCanShare, () => false);
   const full = filledCount === seats.length;
   const canConfirm = filledCount >= 2;
@@ -60,6 +66,15 @@ export function PartyTray() {
       });
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function handleLooking() {
+    setLooking(true);
+    try {
+      await publishLooking({ bio: note.trim() || undefined });
+    } finally {
+      setLooking(false);
     }
   }
 
@@ -105,8 +120,14 @@ export function PartyTray() {
         </label>
       )}
 
-      <ol className="max-h-64 space-y-2 overflow-y-auto pr-1">
-        {seats.map((seat, index) => (
+      <ol className="max-h-52 space-y-2 overflow-y-auto pr-1">
+        {(showAllSeats || seats.length <= 5
+          ? seats
+          : [
+              ...seats.filter((seat) => seat.kind !== "empty"),
+              ...seats.filter((seat) => seat.kind === "empty").slice(0, 1),
+            ]
+        ).map((seat, index) => (
           <li
             key={index}
             className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
@@ -156,10 +177,27 @@ export function PartyTray() {
           </li>
         ))}
       </ol>
+      {!showAllSeats && seats.length > 5 ? (
+        <button
+          type="button"
+          className="mt-2 text-[11px] text-white/45 hover:text-white/70"
+          onClick={() => setShowAllSeats(true)}
+        >
+          Показать все {seats.length} слотов
+        </button>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-2">
         {!joinedParty && !published ? (
           <div className="space-y-2 rounded-lg border border-white/8 bg-white/[0.02] p-3">
+            <button
+              type="button"
+              className="text-[11px] uppercase tracking-wide text-white/40"
+              onClick={() => setShowLfp((value) => !value)}
+            >
+              {showLfp ? "Скрыть текст сбора" : "Текст сбора и слот"}
+            </button>
+            <div className={showLfp ? "space-y-2" : "hidden lg:block lg:space-y-2"}>
             <p className="text-[11px] uppercase tracking-wide text-white/40">Шаблон LFP</p>
             <div className="flex flex-wrap gap-1.5">
               {templates.slice(0, 4).map((template) => (
@@ -207,20 +245,34 @@ export function PartyTray() {
                 ))}
               </select>
             </label>
+            </div>
           </div>
         ) : null}
 
         {!joinedParty ? (
-          <Button
-            type="button"
-            size="lg"
-            data-testid="publish-party"
-            disabled={publishing || published}
-            onClick={() => void handlePublish()}
-          >
-            <Radio data-icon="inline-start" />
-            {published ? "Сбор уже в ленте" : "Открыть сбор"}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              size="lg"
+              data-testid="publish-looking"
+              disabled={looking || lookingPosted}
+              onClick={() => void handleLooking()}
+              variant="outline"
+              className="border-white/15 bg-white/5"
+            >
+              {lookingPosted ? "Уже в ленте" : "Я ищу"}
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              data-testid="publish-party"
+              disabled={publishing || published}
+              onClick={() => void handlePublish()}
+            >
+              <Radio data-icon="inline-start" />
+              {published ? "В сборах" : "Открыть сбор"}
+            </Button>
+          </div>
         ) : null}
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -273,15 +325,18 @@ export function PartyTray() {
           size="lg"
           data-testid="confirm-party"
           disabled={!canConfirm || ready}
-          onClick={() => setReady(true)}
+          onClick={() => {
+            setReady(true);
+            void copyReadyBrief();
+          }}
         >
           {ready ? (
             <>
               <PartyPopper data-icon="inline-start" />
-              Пати готова — можно заходить
+              Пати готова — бриф скопирован
             </>
           ) : full ? (
-            "Подтвердить состав"
+            "Подтвердить и скопировать бриф"
           ) : canConfirm ? (
             `Собраться ${filledCount} из ${seats.length}`
           ) : (
@@ -291,7 +346,7 @@ export function PartyTray() {
         {ready ? (
           <p className="flex items-center gap-1 text-xs text-emerald-300">
             <Check className="size-3" />
-            Состав зафиксирован. Зовите людей в клиент игры по Steam или Discord.
+            В буфере: состав, ссылка /join и Discord/Steam. Кидайте в чат и заходите в игру.
           </p>
         ) : null}
       </div>

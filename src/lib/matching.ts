@@ -125,9 +125,13 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
 
 export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatch | null {
   if (party.gameId !== criteria.gameId) return null;
-  if (party.partySize !== criteria.partySize) return null;
   if (party.filled >= party.partySize) return null;
-  if (party.playStyle !== criteria.playStyle) return null;
+
+  const sizeGap = Math.abs(party.partySize - criteria.partySize);
+  if (sizeGap > 2) return null;
+
+  const styleFit = compatibleStyle([party.playStyle], criteria.playStyle);
+  if (styleFit === "none") return null;
 
   const hours = overlap(party.hours, criteria.hours);
   if (hours.length === 0) return null;
@@ -142,6 +146,16 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
   ];
 
   let score = 50 + Math.max(0, 24 - rankGap * 8) + hours.length * 8;
+  if (styleFit === "exact") score += 10;
+  else {
+    score += 4;
+    reasons.push("Стиль близкий");
+  }
+  if (sizeGap === 0) score += 12;
+  else {
+    score -= sizeGap * 8;
+    reasons.push(`Стол на ${party.partySize}, вы ищете ${criteria.partySize}`);
+  }
   if (rankGap === 0) reasons.push("Уровень пати совпадает");
   if (party.micRequired && criteria.playStyle === "voice") {
     score += 6;
@@ -192,10 +206,17 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
 export function matchPeople(
   criteria: MatchCriteria,
   extraParties: OpenParty[] = [],
+  extraPlayers: Player[] = [],
 ): MatchResult {
   const roleTag = criteria.roleTag ?? null;
   const recent = new Set(criteria.recentPersonIds ?? []);
-  const playerMatches = players
+  const seenPlayers = new Set<string>();
+  const playerMatches = [...extraPlayers, ...players]
+    .filter((player) => {
+      if (seenPlayers.has(player.id)) return false;
+      seenPlayers.add(player.id);
+      return true;
+    })
     .map((player) => scorePlayer(player, criteria))
     .filter((row): row is PlayerMatch => row !== null)
     .sort((a, b) => {

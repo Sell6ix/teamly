@@ -1,6 +1,6 @@
 import { roleFacetFor } from "@/lib/game-fields";
 import { gameById, matchPeople } from "@/lib/matching";
-import { listPublishedParties } from "@/lib/party-store";
+import { listLooking, listPublishedParties } from "@/lib/party-store";
 import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
 import type {
   GameId,
@@ -30,7 +30,7 @@ function isRoleTag(gameId: GameId, value: unknown): value is string {
 }
 
 export async function POST(request: Request) {
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  await new Promise((resolve) => setTimeout(resolve, 120));
 
   let body: unknown;
   try {
@@ -105,5 +105,6 @@ export async function POST(request: Request) {
   };
 
   const published = listPublishedParties(typedGameId);
-  return NextResponse.json(matchPeople(criteria, published));
+  const looking = listLooking(typedGameId);
+  return NextResponse.json(matchPeople(criteria, published, looking));
 }

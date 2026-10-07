@@ -11,6 +11,7 @@ import Link from "next/link";
 export function CatalogHome() {
   const baseGames = useMemo(() => catalogGames(), []);
   const [extraCounts, setExtraCounts] = useState<Record<string, number>>({});
+  const [extraLooking, setExtraLooking] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<GameType | "all">("all");
 
@@ -18,8 +19,11 @@ export function CatalogHome() {
     let cancelled = false;
     void fetch("/api/parties?counts=1")
       .then((res) => res.json())
-      .then((data: { counts?: Record<string, number> }) => {
-        if (!cancelled) setExtraCounts(data.counts ?? {});
+      .then((data: { counts?: Record<string, number>; looking?: Record<string, number> }) => {
+        if (!cancelled) {
+          setExtraCounts(data.counts ?? {});
+          setExtraLooking(data.looking ?? {});
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -29,6 +33,7 @@ export function CatalogHome() {
 
   const games = baseGames.map((game) => ({
     ...game,
+    looking: game.looking + (extraLooking[game.id] ?? 0),
     openParties: game.openParties + (extraCounts[game.id] ?? 0),
   }));
 

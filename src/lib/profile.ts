@@ -196,6 +196,13 @@ export function lfpTemplatesFor(gameId: string): LfpTemplate[] {
         note: "Goose Goose Duck. Спокойные голосования.",
       },
     ],
+    "it-takes-two": [
+      {
+        id: "duo",
+        label: "Ищу пару",
+        note: "Ищу пару на вечер. Без спидрана, можно подсказывать.",
+      },
+    ],
   };
 
   return [...(byGame[gameId] ?? []), ...common];
