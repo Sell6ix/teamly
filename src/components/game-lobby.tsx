@@ -628,7 +628,8 @@ function PlayerCard({
   onInvite: () => void;
 }) {
   const isYou = row.player.id.startsWith("you-");
-  const { player, score, reasons } = row;
+  const { player, reasons } = row;
+  const proof = reasons.slice(0, 2);
   return (
     <article className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition hover:border-white/16">
       <div className="flex items-start justify-between gap-3">
@@ -681,7 +682,8 @@ function PlayerCard({
           </Button>
         )}
       </div>
-      <p className="mt-3 text-sm text-white/60">{reasons[0]}</p>
+      <p className="mt-3 text-sm text-white/60">{proof[0]}</p>
+      {proof[1] ? <p className="mt-1 text-xs text-white/40">{proof[1]}</p> : null}
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-white/40">
         <span>{formatHours(player.hours)}</span>
         {player.mic ? (
@@ -696,9 +698,6 @@ function PlayerCard({
         {player.voicePlatform ? (
           <span>{voiceLabel[player.voicePlatform]}</span>
         ) : null}
-        <span className="ml-auto text-white/30" title="Сортировка по совпадению">
-          {score}%
-        </span>
       </div>
     </article>
   );

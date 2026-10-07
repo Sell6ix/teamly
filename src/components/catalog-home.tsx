@@ -3,17 +3,40 @@
 import { CoverImage } from "@/components/cover-image";
 import { SiteChrome } from "@/components/site-chrome";
 import { catalogGames } from "@/lib/catalog";
+import { catalogHref, parseCatalogSearchParams } from "@/lib/catalog-url";
 import { GAME_TYPES, gameTypeLabel } from "@/lib/game-types";
 import type { GameType } from "@/lib/types";
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 export function CatalogHome() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const filters = useMemo(
+    () => parseCatalogSearchParams(new URLSearchParams(searchParams.toString())),
+    [searchParams],
+  );
+
   const baseGames = useMemo(() => catalogGames(), []);
   const [extraCounts, setExtraCounts] = useState<Record<string, number>>({});
   const [extraLooking, setExtraLooking] = useState<Record<string, number>>({});
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<GameType | "all">("all");
+  const [queryDraft, setQueryDraft] = useState(filters.q);
+
+  useEffect(() => {
+    setQueryDraft(filters.q);
+  }, [filters.q]);
+
+  useEffect(() => {
+    const trimmed = queryDraft.trim();
+    if (trimmed === filters.q) return;
+    const timer = window.setTimeout(() => {
+      router.replace(catalogHref({ type: filters.type, q: queryDraft }), {
+        scroll: false,
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [queryDraft, filters.q, filters.type, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +54,10 @@ export function CatalogHome() {
     };
   }, []);
 
+  function setTypeFilter(type: GameType | "all") {
+    router.replace(catalogHref({ type, q: filters.q }), { scroll: false });
+  }
+
   const games = baseGames.map((game) => ({
     ...game,
     looking: game.looking + (extraLooking[game.id] ?? 0),
@@ -42,13 +69,13 @@ export function CatalogHome() {
   );
 
   const filtered = games.filter((game) => {
-    const q = query.trim().toLowerCase();
+    const q = queryDraft.trim().toLowerCase();
     const matchesQuery =
       !q ||
       game.name.toLowerCase().includes(q) ||
       game.genre.toLowerCase().includes(q) ||
       gameTypeLabel[game.type].toLowerCase().includes(q);
-    const matchesType = typeFilter === "all" || game.type === typeFilter;
+    const matchesType = filters.type === "all" || game.type === filters.type;
     return matchesQuery && matchesType;
   });
 
@@ -70,7 +97,7 @@ export function CatalogHome() {
             data-testid="catalog-type-all"
             onClick={() => setTypeFilter("all")}
             className={`rounded-lg px-3 py-1.5 text-sm transition ${
-              typeFilter === "all"
+              filters.type === "all"
                 ? "bg-[var(--brand)] text-black"
                 : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
             }`}
@@ -84,7 +111,7 @@ export function CatalogHome() {
               data-testid={`catalog-type-${type}`}
               onClick={() => setTypeFilter(type)}
               className={`rounded-lg px-3 py-1.5 text-sm transition ${
-                typeFilter === type
+                filters.type === type
                   ? "bg-[var(--brand)] text-black"
                   : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
               }`}
@@ -98,8 +125,8 @@ export function CatalogHome() {
           <label className="relative block w-full">
             <span className="sr-only">Поиск игры</span>
             <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={queryDraft}
+              onChange={(event) => setQueryDraft(event.target.value)}
               placeholder="Найти игру или тип…"
               data-testid="catalog-search"
               className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)]/50"

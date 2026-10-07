@@ -1,20 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Valorant">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#120308"/>
-      <stop offset="45%" stop-color="#3a0a14"/>
+      <stop offset="0%" stop-color="#0a0206"/>
+      <stop offset="40%" stop-color="#2a0610"/>
       <stop offset="100%" stop-color="#ff4655"/>
     </linearGradient>
     <linearGradient id="slash" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ffe4e8"/>
+      <stop offset="0%" stop-color="#fff5f6"/>
       <stop offset="100%" stop-color="#ff4655"/>
     </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="#ff4655" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff4655" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="560" fill="url(#bg)"/>
-  <circle cx="330" cy="70" r="140" fill="#ff4655" opacity="0.22"/>
-  <circle cx="40" cy="480" r="100" fill="#000" opacity="0.35"/>
-  <path d="M55 430 L210 95 L268 95 L115 430 Z" fill="url(#slash)" opacity="0.98"/>
-  <path d="M200 430 L285 235 L340 235 L255 430 Z" fill="#fff" opacity="0.16"/>
-  <rect x="0" y="470" width="400" height="90" fill="#000" opacity="0.35"/>
-  <text x="28" y="528" fill="#fff" font-family="Georgia, serif" font-size="38" font-weight="700" letter-spacing="3">VALORANT</text>
+  <rect width="400" height="560" fill="url(#glow)"/>
+  <path d="M0 420 L400 280 L400 560 L0 560 Z" fill="#000" opacity="0.28"/>
+  <path d="M48 450 L210 90 L275 90 L115 450 Z" fill="url(#slash)"/>
+  <path d="M195 450 L290 230 L348 230 L255 450 Z" fill="#fff" opacity="0.18"/>
+  <circle cx="318" cy="118" r="8" fill="#fff" opacity="0.85"/>
+  <circle cx="338" cy="148" r="4" fill="#ff4655"/>
+  <rect x="0" y="468" width="400" height="92" fill="#050205" opacity="0.55"/>
+  <text x="28" y="526" fill="#fff" font-family="Georgia, serif" font-size="40" font-weight="700" letter-spacing="4">VALORANT</text>
 </svg>

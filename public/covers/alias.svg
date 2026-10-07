@@ -1,1 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560"><rect width="400" height="560" fill="#12141a"/><text x="28" y="520" fill="#fff" font-family="Georgia,serif" font-size="32" font-weight="700">ALIAS</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Alias">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#071018"/>
+      <stop offset="55%" stop-color="#0e2740"/>
+      <stop offset="100%" stop-color="#3d8bfd"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <g transform="translate(70 120) rotate(-8)">
+    <rect width="160" height="100" rx="10" fill="#f4f7fb"/>
+    <text x="28" y="62" fill="#1a2a3a" font-family="Georgia, serif" font-size="28" font-weight="700">WORD</text>
+  </g>
+  <g transform="translate(170 210) rotate(10)">
+    <rect width="160" height="100" rx="10" fill="#ffd166"/>
+    <text x="30" y="62" fill="#2a1a08" font-family="Georgia, serif" font-size="28" font-weight="700">HINT</text>
+  </g>
+  <g transform="translate(95 300) rotate(-4)">
+    <rect width="160" height="100" rx="10" fill="#3d8bfd"/>
+    <text x="34" y="62" fill="#fff" font-family="Georgia, serif" font-size="28" font-weight="700">TEAM</text>
+  </g>
+  <rect x="0" y="468" width="400" height="92" fill="#040810" opacity="0.55"/>
+  <text x="28" y="526" fill="#fff" font-family="Georgia, serif" font-size="40" font-weight="700">ALIAS</text>
+</svg>

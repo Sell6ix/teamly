@@ -30,8 +30,6 @@ function isRoleTag(gameId: GameId, value: unknown): value is string {
 }
 
 export async function POST(request: Request) {
-  await new Promise((resolve) => setTimeout(resolve, 120));
-
   let body: unknown;
   try {
     body = await request.json();
