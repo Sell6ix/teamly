@@ -1,5 +1,14 @@
 import { playStylesFor, roleFacetFor } from "./game-fields";
-import type { Game, HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "./types";
+import { REGIONS, VOICE_PLATFORMS } from "./profile";
+import type {
+  Game,
+  HourWindow,
+  MatchCriteria,
+  PlayStyle,
+  Region,
+  SkillLevel,
+  VoicePlatform,
+} from "./types";
 import { HOURS, PLAY_STYLES, SKILL_LEVELS } from "./types";
 
 export type LobbyFilters = {
@@ -8,6 +17,8 @@ export type LobbyFilters = {
   skill: SkillLevel;
   hours: HourWindow[];
   roleTag: string | null;
+  region: Region | null;
+  voicePlatform: VoicePlatform | null;
 };
 
 export function defaultLobbyFilters(game: Game): LobbyFilters {
@@ -23,6 +34,8 @@ export function defaultLobbyFilters(game: Game): LobbyFilters {
     skill: game.type === "party" ? 3 : 4,
     hours: ["evening"],
     roleTag: null,
+    region: null,
+    voicePlatform: null,
   };
 }
 
@@ -66,7 +79,19 @@ export function parseLobbySearchParams(
   const roleTag =
     roleRaw && facet?.options.some((opt) => opt.id === roleRaw) ? roleRaw : null;
 
-  return { playStyle, partySize, skill, hours, roleTag };
+  const regionRaw = params.get("region");
+  const region =
+    regionRaw && (REGIONS as readonly string[]).includes(regionRaw)
+      ? (regionRaw as Region)
+      : null;
+
+  const voiceRaw = params.get("voice");
+  const voicePlatform =
+    voiceRaw && (VOICE_PLATFORMS as readonly string[]).includes(voiceRaw)
+      ? (voiceRaw as VoicePlatform)
+      : null;
+
+  return { playStyle, partySize, skill, hours, roleTag, region, voicePlatform };
 }
 
 /** Query params only (style lives in `/g/{game}/{style}` when using the alias). */
@@ -86,6 +111,8 @@ export function lobbyFiltersToParams(
   const defaultHoursKey = defaults.hours.slice().sort().join(",");
   if (hoursKey !== defaultHoursKey) params.set("hours", filters.hours.join(","));
   if (filters.roleTag) params.set("role", filters.roleTag);
+  if (filters.region) params.set("region", filters.region);
+  if (filters.voicePlatform) params.set("voice", filters.voicePlatform);
   return params;
 }
 
@@ -104,5 +131,7 @@ export function filtersToCriteria(gameId: Game["id"], filters: LobbyFilters): Ma
     skill: filters.skill,
     hours: filters.hours.length ? filters.hours : ["evening"],
     roleTag: filters.roleTag,
+    region: filters.region,
+    voicePlatform: filters.voicePlatform,
   };
 }

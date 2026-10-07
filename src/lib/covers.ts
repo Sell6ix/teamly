@@ -20,6 +20,9 @@ const JPG: GameId[] = [
   "gartic",
   "jackbox",
   "codenames",
+  "alias",
+  "uno",
+  "ggd",
 ];
 
 export function coverSrc(gameId: GameId): string {

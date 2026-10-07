@@ -1,7 +1,9 @@
 "use client";
 
-import { YOU_NAME } from "@/lib/data";
+import { ProfilePanel } from "@/components/profile-panel";
+import { defaultProfile, loadProfile, regionLabel, type UserProfile } from "@/lib/profile";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export function SiteChrome({
   children,
@@ -10,6 +12,13 @@ export function SiteChrome({
   children: React.ReactNode;
   subtle?: boolean;
 }) {
+  const [profile, setProfile] = useState<UserProfile>(defaultProfile);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setProfile(loadProfile());
+  }, []);
+
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -31,15 +40,24 @@ export function SiteChrome({
             <span className="hidden text-xs text-white/45 sm:inline">Собери пати за минуту</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-white/55">
-            <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80">
-              {YOU_NAME}
+            <button
+              type="button"
+              data-testid="open-profile"
+              onClick={() => setOpen(true)}
+              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80 transition hover:border-[var(--brand)]/40 hover:text-white"
+            >
+              {profile.displayName || "Профиль"}
+            </button>
+            <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
+              {regionLabel[profile.region]}
             </span>
-            <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">МСК</span>
           </div>
         </div>
       </header>
 
       <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+
+      <ProfilePanel open={open} onClose={() => setOpen(false)} onSaved={setProfile} />
     </div>
   );
 }

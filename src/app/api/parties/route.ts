@@ -8,7 +8,15 @@ import {
   publishedCounts,
   upsertJoinSession,
 } from "@/lib/party-store";
-import type { GameId, HourWindow, PlayStyle, SkillLevel } from "@/lib/types";
+import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
+import type {
+  GameId,
+  HourWindow,
+  PlayStyle,
+  Region,
+  SkillLevel,
+  VoicePlatform,
+} from "@/lib/types";
 import { HOURS, PLAY_STYLES, SKILL_LEVELS } from "@/lib/types";
 import { NextResponse } from "next/server";
 
@@ -92,7 +100,22 @@ export async function POST(request: Request) {
       ? payload.note.trim()
       : `Открытый сбор · свободно ${Math.max(1, session.partySize - session.filled)}`;
 
-  const party = publishSession(code, note);
+  const startsAt =
+    typeof payload.startsAt === "string" && payload.startsAt.trim()
+      ? payload.startsAt.trim()
+      : null;
+  const region =
+    typeof payload.region === "string" &&
+    (REGIONS as readonly string[]).includes(payload.region)
+      ? (payload.region as Region)
+      : undefined;
+  const voicePlatform =
+    typeof payload.voicePlatform === "string" &&
+    (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
+      ? (payload.voicePlatform as VoicePlatform)
+      : undefined;
+
+  const party = publishSession(code, note, { startsAt, region, voicePlatform });
   if (!party) {
     return NextResponse.json({ error: "Не удалось открыть сбор." }, { status: 500 });
   }

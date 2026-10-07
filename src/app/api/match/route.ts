@@ -1,7 +1,16 @@
 import { roleFacetFor } from "@/lib/game-fields";
 import { gameById, matchPeople } from "@/lib/matching";
 import { listPublishedParties } from "@/lib/party-store";
-import type { GameId, HourWindow, MatchCriteria, PlayStyle, SkillLevel } from "@/lib/types";
+import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
+import type {
+  GameId,
+  HourWindow,
+  MatchCriteria,
+  PlayStyle,
+  Region,
+  SkillLevel,
+  VoicePlatform,
+} from "@/lib/types";
 import { NextResponse } from "next/server";
 
 const PLAY_STYLES: PlayStyle[] = ["casual", "ranked", "learning", "voice", "speedrun"];
@@ -68,6 +77,16 @@ export async function POST(request: Request) {
 
   const typedGameId = gameId as GameId;
   const roleTag = isRoleTag(typedGameId, payload.roleTag) ? payload.roleTag : null;
+  const region =
+    typeof payload.region === "string" &&
+    (REGIONS as readonly string[]).includes(payload.region)
+      ? (payload.region as Region)
+      : null;
+  const voicePlatform =
+    typeof payload.voicePlatform === "string" &&
+    (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
+      ? (payload.voicePlatform as VoicePlatform)
+      : null;
 
   const criteria: MatchCriteria = {
     gameId: typedGameId,
@@ -76,6 +95,8 @@ export async function POST(request: Request) {
     skill: skill as SkillLevel,
     hours,
     roleTag,
+    region,
+    voicePlatform,
   };
 
   const published = listPublishedParties(typedGameId);

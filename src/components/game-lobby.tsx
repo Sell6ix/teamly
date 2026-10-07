@@ -3,6 +3,7 @@
 import { CoverImage } from "@/components/cover-image";
 import { PartyTray } from "@/components/party-tray";
 import { useParty } from "@/components/party-context";
+import { ProfileLinks } from "@/components/profile-links";
 import { SiteChrome } from "@/components/site-chrome";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,16 +29,24 @@ import {
   partySizeLabel,
   playStyleLabel,
 } from "@/lib/labels";
+import {
+  regionLabel,
+  REGIONS,
+  voiceLabel,
+  VOICE_PLATFORMS,
+} from "@/lib/profile";
 import type {
   Game,
   HourWindow,
   MatchResult,
   OpenParty,
+  Region,
   SkillLevel,
+  VoicePlatform,
 } from "@/lib/types";
 import {
   AlertCircle,
-  ExternalLink,
+  Clock,
   Link2,
   Mic,
   MicOff,
@@ -339,6 +348,51 @@ export function GameLobby({
                   </Chip>
                 ))}
               </ChipRow>
+              <ChipRow label="Регион">
+                <Chip
+                  active={filters.region === null}
+                  onClick={() => applyFilters({ ...filters, region: null })}
+                  testId="region-any"
+                >
+                  Любой
+                </Chip>
+                {REGIONS.map((region) => (
+                  <Chip
+                    key={region}
+                    active={filters.region === region}
+                    onClick={() =>
+                      applyFilters({ ...filters, region: region as Region })
+                    }
+                    testId={`region-${region}`}
+                  >
+                    {regionLabel[region]}
+                  </Chip>
+                ))}
+              </ChipRow>
+              <ChipRow label="Голос">
+                <Chip
+                  active={filters.voicePlatform === null}
+                  onClick={() => applyFilters({ ...filters, voicePlatform: null })}
+                  testId="voice-any-filter"
+                >
+                  Не важно
+                </Chip>
+                {VOICE_PLATFORMS.map((voice) => (
+                  <Chip
+                    key={voice}
+                    active={filters.voicePlatform === voice}
+                    onClick={() =>
+                      applyFilters({
+                        ...filters,
+                        voicePlatform: voice as VoicePlatform,
+                      })
+                    }
+                    testId={`voice-${voice}`}
+                  >
+                    {voiceLabel[voice]}
+                  </Chip>
+                ))}
+              </ChipRow>
             </div>
 
             <button
@@ -540,21 +594,16 @@ function PlayerCard({
             ) : (
               <span className="text-[11px] text-white/40">Офлайн</span>
             )}
-            {player.steamProfileUrl ? (
-              <a
-                href={player.steamProfileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-normal text-[#8fbcff] transition hover:border-[#8fbcff]/40 hover:bg-[#8fbcff]/10"
-                onClick={(event) => event.stopPropagation()}
-              >
-                Steam
-                <ExternalLink className="size-3" />
-              </a>
-            ) : null}
+            <ProfileLinks
+              steamProfileUrl={player.steamProfileUrl}
+              discordUrl={player.discordUrl}
+              riotTag={player.riotTag}
+              compact
+            />
           </h3>
           <p className="mt-1 text-sm text-white/50">
             {player.role} · {skillLabelFor(player.gameId, player.skill)}
+            {player.region ? ` · ${regionLabel[player.region]}` : ""}
           </p>
         </div>
         <Button
@@ -580,6 +629,9 @@ function PlayerCard({
             <MicOff className="size-3" /> без микро
           </span>
         )}
+        {player.voicePlatform ? (
+          <span>{voiceLabel[player.voicePlatform]}</span>
+        ) : null}
         <span className="ml-auto text-white/30" title="Сортировка по совпадению">
           {score}%
         </span>
@@ -630,12 +682,20 @@ function PartyCard({
           свободно {open}
         </span>
       </div>
+      {party.startsAt ? (
+        <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-[var(--brand)]">
+          <Clock className="size-3.5" />
+          {party.startsAt}
+        </p>
+      ) : null}
       <p className="mt-3 text-sm text-white/65">{party.note}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/40">
         <span>
           {party.filled}/{party.partySize}
         </span>
         <span>{reasons[0]}</span>
+        {party.region ? <span>{regionLabel[party.region]}</span> : null}
+        {party.voicePlatform ? <span>{voiceLabel[party.voicePlatform]}</span> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="button" size="lg" data-testid="join-party" disabled={joined} onClick={onJoin}>

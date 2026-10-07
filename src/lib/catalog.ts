@@ -40,6 +40,9 @@ export function coverGradient(gameId: GameId): string {
     gartic: ["#1a1208", "#f4a261"],
     jackbox: ["#1a0c08", "#ff6b35"],
     codenames: ["#081018", "#2a6f97"],
+    alias: ["#081428", "#3d8bfd"],
+    uno: ["#1a0505", "#e10600"],
+    ggd: ["#1a1608", "#f4d35e"],
   };
   const [from, to] = accents[gameId];
   return `linear-gradient(155deg, ${from} 0%, ${to} 100%)`;

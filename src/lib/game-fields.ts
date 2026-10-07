@@ -363,6 +363,58 @@ export const gameFields: Record<GameId, GameFields> = {
       ],
     },
   },
+  alias: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый раз",
+      2: "Знаю правила",
+      3: "Быстрый темп",
+      4: "Сильные ассоциации",
+      5: "Ведущий стола",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "explain", label: "Объясняет", keywords: ["объясн", "словоед"] },
+        { id: "guess", label: "Угадывает", keywords: ["угадыв"] },
+      ],
+    },
+  },
+  uno: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первая партия",
+      2: "Знаю карты",
+      3: "House rules",
+      4: "Быстрый стол",
+      5: "Турнирный вайб",
+    },
+    roleFacet: {
+      label: "Стиль",
+      options: [
+        { id: "stack", label: "Стекер", keywords: ["стек", "draw", "+2", "+4"] },
+        { id: "chill", label: "Казуал", keywords: ["казуал", "телефон"] },
+      ],
+    },
+  },
+  ggd: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый раз",
+      2: "Знаю задачи",
+      3: "Уверенный",
+      4: "Читаю голосования",
+      5: "Хост кастомок",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "goose", label: "Гусь", keywords: ["гусь", "goose"] },
+        { id: "duck", label: "Утка", keywords: ["утк", "duck"] },
+        { id: "host", label: "Хост", keywords: ["хост", "host"] },
+      ],
+    },
+  },
 };
 
 export function skillLabelFor(gameId: GameId, skill: SkillLevel): string {

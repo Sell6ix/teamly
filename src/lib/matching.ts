@@ -6,6 +6,7 @@ import {
   skillLabelFor,
 } from "./game-fields";
 import { hourLabel, playStyleLabel } from "./labels";
+import { regionLabel, voiceLabel } from "./profile";
 import type {
   Game,
   MatchCriteria,
@@ -88,6 +89,27 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     }
   }
 
+  if (criteria.region && player.region) {
+    if (player.region === criteria.region) {
+      score += 10;
+      reasons.push(`Регион: ${regionLabel[player.region]}`);
+    } else {
+      score -= 8;
+    }
+  }
+
+  if (criteria.voicePlatform && criteria.voicePlatform !== "any" && player.voicePlatform) {
+    if (
+      player.voicePlatform === criteria.voicePlatform ||
+      player.voicePlatform === "any"
+    ) {
+      score += 8;
+      reasons.push(`Голос: ${voiceLabel[player.voicePlatform]}`);
+    } else {
+      score -= 6;
+    }
+  }
+
   return {
     player,
     score: Math.min(99, Math.max(1, Math.round(score))),
@@ -129,6 +151,28 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
     if (mentions && option) {
       score += 10;
       reasons.push(`Ищут: ${option.label}`);
+    }
+  }
+
+  if (party.startsAt) {
+    score += 4;
+    reasons.unshift(`Старт: ${party.startsAt}`);
+  }
+
+  if (criteria.region && party.region) {
+    if (party.region === criteria.region) score += 8;
+    else score -= 6;
+  }
+
+  if (
+    criteria.voicePlatform &&
+    criteria.voicePlatform !== "any" &&
+    party.voicePlatform
+  ) {
+    if (party.voicePlatform === criteria.voicePlatform || party.voicePlatform === "any") {
+      score += 6;
+    } else {
+      score -= 4;
     }
   }
 

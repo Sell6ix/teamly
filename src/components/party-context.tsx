@@ -2,6 +2,7 @@
 
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
+import { loadProfile } from "@/lib/profile";
 import { shareOrCopy } from "@/lib/share";
 import type {
   GameId,
@@ -64,7 +65,10 @@ type PartyContextValue = {
   setReady: (ready: boolean) => void;
   loadJoinCode: (code: string) => Promise<boolean>;
   applyOpenParty: (party: OpenParty, autoJoin?: boolean) => void;
-  publishOpenParty: () => Promise<OpenParty | null>;
+  publishOpenParty: (options?: {
+    note?: string;
+    startsAt?: string | null;
+  }) => Promise<OpenParty | null>;
   shareUrl: string;
   copyShareLink: (prefer?: "auto" | "share" | "copy") => Promise<void>;
   bumpFeed: () => void;
@@ -425,7 +429,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     [commit],
   );
 
-  const publishOpenParty = useCallback(async () => {
+  const publishOpenParty = useCallback(async (options?: {
+    note?: string;
+    startsAt?: string | null;
+  }) => {
     const current = ensureClientSnapshot();
     if (!current.gameId) {
       toast.error("Сначала зайдите в лобби игры.");
@@ -437,6 +444,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     }
 
     await syncJoinToServer(current);
+    const profile = loadProfile();
 
     try {
       const response = await fetch("/api/parties", {
@@ -452,7 +460,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           hours: current.lobbyMeta.hours,
           seats: seatsToStored(current.seats),
           filled: current.seats.filter((seat) => seat.kind !== "empty").length,
-          note: `Ищем ещё · ${current.partyName}`,
+          note: options?.note?.trim() || `Ищем ещё · ${current.partyName}`,
+          startsAt: options?.startsAt ?? null,
+          region: profile.region,
+          voicePlatform: profile.voicePlatform,
         }),
       });
       const data = (await response.json()) as {

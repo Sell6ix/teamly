@@ -4,8 +4,10 @@ import type {
   HourWindow,
   OpenParty,
   PlayStyle,
+  Region,
   SkillLevel,
-} from "@/lib/types";
+  VoicePlatform,
+} from "./types";
 
 export type StoredSeat = {
   name: string;
@@ -28,6 +30,9 @@ export type JoinSession = {
   micRequired: boolean;
   leader: string;
   ready: boolean;
+  startsAt?: string | null;
+  region?: Region;
+  voicePlatform?: VoicePlatform;
   updatedAt: number;
 };
 
@@ -73,6 +78,9 @@ function seedDemo(target: Store) {
     micRequired: true,
     leader: YOU_NAME,
     ready: false,
+    startsAt: "сегодня 21:00",
+    region: "msk",
+    voicePlatform: "discord",
     updatedAt: Date.now(),
   };
   target.joins.set(demo.code, demo);
@@ -96,6 +104,9 @@ export function sessionToOpenParty(session: JoinSession): OpenParty {
     leader: session.leader,
     note: session.note,
     micRequired: session.micRequired,
+    startsAt: session.startsAt ?? null,
+    region: session.region,
+    voicePlatform: session.voicePlatform,
   };
 }
 
@@ -111,7 +122,6 @@ export function upsertJoinSession(
   store().joins.set(code, next);
   if (next.published) {
     const party = sessionToOpenParty(next);
-    // Keep at least one open slot for friends joining the LFG posting.
     if (party.filled >= party.partySize) {
       party.filled = Math.max(1, party.partySize - 1);
     }
@@ -124,13 +134,24 @@ export function getJoinSession(code: string): JoinSession | undefined {
   return store().joins.get(normalizeCode(code));
 }
 
-export function publishSession(code: string, note?: string): OpenParty | null {
+export function publishSession(
+  code: string,
+  note?: string,
+  extras?: {
+    startsAt?: string | null;
+    region?: Region;
+    voicePlatform?: VoicePlatform;
+  },
+): OpenParty | null {
   const session = getJoinSession(code);
   if (!session) return null;
   const next = {
     ...session,
     published: true,
     note: note?.trim() || session.note || `Ищем ещё в ${session.partyName}`,
+    startsAt: extras?.startsAt ?? session.startsAt ?? null,
+    region: extras?.region ?? session.region,
+    voicePlatform: extras?.voicePlatform ?? session.voicePlatform,
     updatedAt: Date.now(),
   };
   store().joins.set(next.code, next);
@@ -156,7 +177,10 @@ export function listPublishedParties(gameId?: GameId): OpenParty[] {
 }
 
 export function getPublishedParty(id: string): OpenParty | undefined {
-  return store().published.get(id.toLowerCase()) ?? store().published.get(normalizeCode(id).toLowerCase());
+  return (
+    store().published.get(id.toLowerCase()) ??
+    store().published.get(normalizeCode(id).toLowerCase())
+  );
 }
 
 export function publishedCounts(): Record<string, number> {

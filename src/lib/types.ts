@@ -33,7 +33,10 @@ export type GameId =
   | "amongus"
   | "gartic"
   | "jackbox"
-  | "codenames";
+  | "codenames"
+  | "alias"
+  | "uno"
+  | "ggd";
 
 /** High-level catalog filter (Бункер → пати и т.п.) */
 export type GameType =
@@ -43,6 +46,9 @@ export type GameType =
   | "coop"
   | "horror"
   | "adventure";
+
+export type Region = "msk" | "eu" | "kz" | "other";
+export type VoicePlatform = "discord" | "ingame" | "any";
 
 export type Game = {
   id: GameId;
@@ -66,8 +72,12 @@ export type Player = {
   online: boolean;
   bio: string;
   timezone: string;
+  region?: Region;
+  voicePlatform?: VoicePlatform;
   /** Public Steam profile URL when the player shared one */
   steamProfileUrl?: string | null;
+  discordUrl?: string | null;
+  riotTag?: string | null;
 };
 
 export type OpenParty = {
@@ -82,6 +92,10 @@ export type OpenParty = {
   leader: string;
   note: string;
   micRequired: boolean;
+  /** Human slot like «сегодня 21:00» */
+  startsAt?: string | null;
+  region?: Region;
+  voicePlatform?: VoicePlatform;
 };
 
 export type MatchCriteria = {
@@ -92,6 +106,8 @@ export type MatchCriteria = {
   hours: HourWindow[];
   /** Game-specific role/line/class tag from lobby chips */
   roleTag?: string | null;
+  region?: Region | null;
+  voicePlatform?: VoicePlatform | null;
 };
 
 export type PlayerMatch = {
