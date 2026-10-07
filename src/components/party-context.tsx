@@ -343,10 +343,13 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
 
   const joinParty = useCallback(
     (party: OpenParty) => {
-      if (party.filled >= party.partySize) return;
+      if (party.filled >= party.partySize) {
+        toast.error("В этом сборе уже нет мест.");
+        return;
+      }
       const names =
         party.members && party.members.length > 0
-          ? party.members.slice(0, party.filled)
+          ? party.members.slice(0, Math.max(1, party.filled))
           : [
               party.leader,
               ...Array.from({ length: Math.max(0, party.filled - 1) }, (_, index) => `Участник ${index + 2}`),
@@ -364,16 +367,23 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         online: true,
         bio: party.note,
         timezone: "МСК",
+        region: party.region,
+        voicePlatform: party.voicePlatform,
       }));
+      const current = ensureClientSnapshot();
+      // Leave one empty seat for «you» — makeSeats always prepends the host seat.
+      const others = placeholders.slice(0, Math.max(0, party.partySize - 1));
       commit({
-        ...ensureClientSnapshot(),
+        ...current,
         joinCode: party.id.toUpperCase(),
         partyName: party.name,
-        seats: makeSeats(party.partySize, placeholders),
+        seats: makeSeats(party.partySize, others),
         joinedParty: party,
         ready: false,
         gameId: party.gameId,
         published: false,
+        lookingPosted: false,
+        feedNonce: current.feedNonce + 1,
         lobbyMeta: {
           playStyle: party.playStyle,
           skill: party.skill,

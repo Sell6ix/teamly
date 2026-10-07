@@ -106,6 +106,7 @@ export function GameLobby({
     [game, searchParams, pathStyle],
   );
   const [tab, setTab] = useState("parties");
+  const tabTouchedRef = useRef(false);
   const [extraOpen, setExtraOpen] = useState(0);
   const [moreFilters, setMoreFilters] = useState(false);
   const [feed, setFeed] = useState<FeedState>({
@@ -114,6 +115,11 @@ export function GameLobby({
     error: null,
     result: null,
   });
+
+  useEffect(() => {
+    tabTouchedRef.current = false;
+    setTab("parties");
+  }, [game.id]);
 
   function applyFilters(next: LobbyFilters) {
     router.replace(lobbyHref(game.id, next, game), { scroll: false });
@@ -175,8 +181,14 @@ export function GameLobby({
             return;
           }
           setFeed({ key, loading: false, error: null, result: data });
-          if (data.parties.length === 0 && data.players.length > 0) setTab("players");
-          else setTab("parties");
+          // Don't yank the user off «Игроки» on every match refresh (e.g. after «Я ищу»).
+          if (!tabTouchedRef.current) {
+            setTab(
+              data.parties.length === 0 && data.players.length > 0
+                ? "players"
+                : "parties",
+            );
+          }
         } catch {
           if (!cancelled) {
             setFeed({
@@ -452,7 +464,13 @@ export function GameLobby({
                 onLooking={() => void party.publishLooking()}
               />
             ) : (
-              <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
+              <Tabs
+                value={tab}
+                onValueChange={(value) => {
+                  tabTouchedRef.current = true;
+                  setTab(String(value));
+                }}
+              >
                 <TabsList className="w-full sm:w-auto">
                   <TabsTrigger value="parties" data-testid="tab-parties">
                     Сборы
@@ -789,8 +807,14 @@ function PartyCard({
         {party.voicePlatform ? <span>{voiceLabel[party.voicePlatform]}</span> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="button" size="lg" data-testid="join-party" disabled={joined} onClick={onJoin}>
-          {joined ? "Вы уже внутри" : "Вступить"}
+        <Button
+          type="button"
+          size="lg"
+          data-testid="join-party"
+          disabled={joined || open <= 0}
+          onClick={onJoin}
+        >
+          {joined ? "Вы уже внутри" : open <= 0 ? "Мест нет" : "Вступить"}
         </Button>
         <Button
           type="button"

@@ -10,7 +10,7 @@ import {
   START_SLOTS,
 } from "@/lib/profile";
 import { Check, Copy, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 function subscribeNoop() {
   return () => undefined;
@@ -42,6 +42,10 @@ export function PartyTray() {
   } = useParty();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    if (joinedParty) setMobileOpen(true);
+  }, [joinedParty?.id]);
   const [looking, setLooking] = useState(false);
   const [note, setNote] = useState("");
   const [startsAt, setStartsAt] = useState("сегодня 21:00");
