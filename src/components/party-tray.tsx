@@ -80,7 +80,7 @@ export function PartyTray() {
         </label>
       )}
 
-      <ol className="space-y-2">
+      <ol className="max-h-64 space-y-2 overflow-y-auto pr-1">
         {seats.map((seat, index) => (
           <li
             key={index}

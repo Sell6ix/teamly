@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   if (!isPlayStyle(payload.playStyle)) {
     return NextResponse.json({ error: "Укажите стиль." }, { status: 400 });
   }
-  if (typeof payload.partySize !== "number" || payload.partySize < 2 || payload.partySize > 5) {
+  if (typeof payload.partySize !== "number" || payload.partySize < 2 || payload.partySize > 12) {
     return NextResponse.json({ error: "Неверный формат пати." }, { status: 400 });
   }
   if (typeof payload.skill !== "number" || !(SKILL_LEVELS as readonly number[]).includes(payload.skill)) {

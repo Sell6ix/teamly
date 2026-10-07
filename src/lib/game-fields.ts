@@ -255,6 +255,114 @@ export const gameFields: Record<GameId, GameFields> = {
       ],
     },
   },
+  bunker: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первая партия",
+      2: "Знаю правила",
+      3: "Уверенный стол",
+      4: "Жёсткие дебаты",
+      5: "Ведущий / опытный",
+    },
+    roleFacet: {
+      label: "Фокус",
+      options: [
+        { id: "debate", label: "Спорщик", keywords: ["спор", "харизм", "дебат", "капитан"] },
+        { id: "medic", label: "Медик", keywords: ["медик"] },
+        { id: "engineer", label: "Инженер", keywords: ["инженер"] },
+        { id: "newbie", label: "Новичок", keywords: ["новичок", "первая", "учусь"] },
+      ],
+    },
+  },
+  mafia: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый стол",
+      2: "Знаю роли",
+      3: "Уверенный",
+      4: "Читаю стол",
+      5: "Ведущий",
+    },
+    roleFacet: {
+      label: "Сторона",
+      options: [
+        { id: "town", label: "Мирный", keywords: ["мирн", "шериф", "доктор"] },
+        { id: "mafia", label: "Мафия", keywords: ["мафия", "дон", "чёрн"] },
+        { id: "host", label: "Ведущий", keywords: ["ведущ"] },
+        { id: "newbie", label: "Новичок", keywords: ["новичок", "учусь"] },
+      ],
+    },
+  },
+  amongus: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый раз",
+      2: "Знаю задачи",
+      3: "Уверенный",
+      4: "Читаю голосования",
+      5: "Хост кастомок",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "crew", label: "Crewmate", keywords: ["crew", "экипаж", "задач"] },
+        { id: "impostor", label: "Impostor", keywords: ["impost", "предател", "сус"] },
+        { id: "host", label: "Хост", keywords: ["хост", "host"] },
+      ],
+    },
+  },
+  gartic: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Каляки",
+      2: "Понятно",
+      3: "Норм рисую",
+      4: "Мем-мастер",
+      5: "Художник",
+    },
+    roleFacet: {
+      label: "Фокус",
+      options: [
+        { id: "draw", label: "Художник", keywords: ["художник", "рису"] },
+        { id: "guess", label: "Угадывает", keywords: ["угадыв", "чат"] },
+        { id: "host", label: "Хост", keywords: ["хост"] },
+      ],
+    },
+  },
+  jackbox: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первый пак",
+      2: "Знаю Quiplash",
+      3: "Свой стол",
+      4: "Хост вечеринок",
+      5: "Все паки",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "host", label: "Хост", keywords: ["хост", "пачк", "pack"] },
+        { id: "player", label: "Игрок", keywords: ["игрок", "телефон", "fibbage", "quiplash"] },
+      ],
+    },
+  },
+  codenames: {
+    playStyles: ["casual", "learning", "voice"],
+    skillLabels: {
+      1: "Первая партия",
+      2: "Знаю правила",
+      3: "Уверенный",
+      4: "Сильные ассоциации",
+      5: "Капитан-про",
+    },
+    roleFacet: {
+      label: "Роль",
+      options: [
+        { id: "captain", label: "Капитан", keywords: ["капитан", "подсказ"] },
+        { id: "operative", label: "Оперативник", keywords: ["оператив", "угадыв"] },
+      ],
+    },
+  },
 };
 
 export function skillLabelFor(gameId: GameId, skill: SkillLevel): string {

@@ -3,6 +3,8 @@
 import { CoverImage } from "@/components/cover-image";
 import { SiteChrome } from "@/components/site-chrome";
 import { catalogGames } from "@/lib/catalog";
+import { GAME_TYPES, gameTypeLabel } from "@/lib/game-types";
+import type { GameType } from "@/lib/types";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
@@ -10,6 +12,7 @@ export function CatalogHome() {
   const baseGames = useMemo(() => catalogGames(), []);
   const [extraCounts, setExtraCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<GameType | "all">("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -29,9 +32,19 @@ export function CatalogHome() {
     openParties: game.openParties + (extraCounts[game.id] ?? 0),
   }));
 
+  const availableTypes = GAME_TYPES.filter((type) =>
+    games.some((game) => game.type === type),
+  );
+
   const filtered = games.filter((game) => {
     const q = query.trim().toLowerCase();
-    return !q || game.name.toLowerCase().includes(q);
+    const matchesQuery =
+      !q ||
+      game.name.toLowerCase().includes(q) ||
+      game.genre.toLowerCase().includes(q) ||
+      gameTypeLabel[game.type].toLowerCase().includes(q);
+    const matchesType = typeFilter === "all" || game.type === typeFilter;
+    return matchesQuery && matchesType;
   });
 
   return (
@@ -46,13 +59,43 @@ export function CatalogHome() {
           </h1>
         </section>
 
+        <div className="mb-4 flex flex-wrap gap-2" data-testid="catalog-type-chips">
+          <button
+            type="button"
+            data-testid="catalog-type-all"
+            onClick={() => setTypeFilter("all")}
+            className={`rounded-lg px-3 py-1.5 text-sm transition ${
+              typeFilter === "all"
+                ? "bg-[var(--brand)] text-black"
+                : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
+            }`}
+          >
+            Все
+          </button>
+          {availableTypes.map((type) => (
+            <button
+              key={type}
+              type="button"
+              data-testid={`catalog-type-${type}`}
+              onClick={() => setTypeFilter(type)}
+              className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                typeFilter === type
+                  ? "bg-[var(--brand)] text-black"
+                  : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white"
+              }`}
+            >
+              {gameTypeLabel[type]}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-6 max-w-md">
           <label className="relative block w-full">
             <span className="sr-only">Поиск игры</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Найти игру…"
+              placeholder="Найти игру или тип…"
               data-testid="catalog-search"
               className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)]/50"
             />
@@ -81,6 +124,9 @@ export function CatalogHome() {
                   <p className="font-display text-base leading-tight text-white sm:text-lg">
                     {game.name}
                   </p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-white/45">
+                    {gameTypeLabel[game.type]}
+                  </p>
                   <p className="mt-1 text-[11px] text-white/70 sm:text-xs">
                     {game.looking} ищут · {game.openParties} сборов
                   </p>
@@ -96,7 +142,9 @@ export function CatalogHome() {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="mt-10 text-sm text-white/50">Ничего не нашлось. Сбросьте поиск.</p>
+          <p className="mt-10 text-sm text-white/50">
+            Ничего не нашлось. Сбросьте тип или поиск.
+          </p>
         ) : null}
       </main>
     </SiteChrome>

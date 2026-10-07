@@ -27,12 +27,28 @@ export type GameId =
   | "lethalcompany"
   | "phasmophobia"
   | "l4d2"
-  | "remnant2";
+  | "remnant2"
+  | "bunker"
+  | "mafia"
+  | "amongus"
+  | "gartic"
+  | "jackbox"
+  | "codenames";
+
+/** High-level catalog filter (Бункер → пати и т.п.) */
+export type GameType =
+  | "party"
+  | "shooter"
+  | "moba"
+  | "coop"
+  | "horror"
+  | "adventure";
 
 export type Game = {
   id: GameId;
   name: string;
   genre: string;
+  type: GameType;
   accent: string;
   partySizes: number[];
 };

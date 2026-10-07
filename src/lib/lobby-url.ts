@@ -12,10 +12,15 @@ export type LobbyFilters = {
 
 export function defaultLobbyFilters(game: Game): LobbyFilters {
   const styles = playStylesFor(game.id);
+  const preferredSize =
+    game.partySizes.find((size) => size === 8) ??
+    game.partySizes.find((size) => size === 5) ??
+    game.partySizes[Math.floor((game.partySizes.length - 1) / 2)] ??
+    game.partySizes[0];
   return {
     playStyle: styles.includes("ranked") ? "ranked" : styles[0],
-    partySize: game.partySizes.includes(5) ? 5 : game.partySizes[0],
-    skill: 4,
+    partySize: preferredSize,
+    skill: game.type === "party" ? 3 : 4,
     hours: ["evening"],
     roleTag: null,
   };

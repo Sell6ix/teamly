@@ -53,8 +53,8 @@ export async function POST(request: Request) {
   if (!isPlayStyle(playStyle)) {
     return NextResponse.json({ error: "Укажите стиль игры." }, { status: 400 });
   }
-  if (typeof partySize !== "number" || partySize < 2 || partySize > 5) {
-    return NextResponse.json({ error: "Формат пати должен быть от 2 до 5 человек." }, { status: 400 });
+  if (typeof partySize !== "number" || partySize < 2 || partySize > 12) {
+    return NextResponse.json({ error: "Формат пати должен быть от 2 до 12 человек." }, { status: 400 });
   }
   if (typeof skill !== "number" || skill < 1 || skill > 5) {
     return NextResponse.json({ error: "Укажите свой уровень." }, { status: 400 });

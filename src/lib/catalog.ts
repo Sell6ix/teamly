@@ -34,6 +34,12 @@ export function coverGradient(gameId: GameId): string {
     phasmophobia: ["#050810", "#1e4d6b"],
     l4d2: ["#140805", "#8b2e0e"],
     remnant2: ["#0c1018", "#3d6b8a"],
+    bunker: ["#121810", "#6b8f4a"],
+    mafia: ["#140810", "#8b1e2d"],
+    amongus: ["#1a0505", "#c51111"],
+    gartic: ["#1a1208", "#f4a261"],
+    jackbox: ["#1a0c08", "#ff6b35"],
+    codenames: ["#081018", "#2a6f97"],
   };
   const [from, to] = accents[gameId];
   return `linear-gradient(155deg, ${from} 0%, ${to} 100%)`;

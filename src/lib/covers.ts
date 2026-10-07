@@ -14,6 +14,12 @@ const JPG: GameId[] = [
   "phasmophobia",
   "l4d2",
   "remnant2",
+  "bunker",
+  "mafia",
+  "amongus",
+  "gartic",
+  "jackbox",
+  "codenames",
 ];
 
 export function coverSrc(gameId: GameId): string {

@@ -43,6 +43,10 @@ export const partySizeLabel: Record<number, string> = {
   3: "Трио",
   4: "Сквад",
   5: "Пятёрка",
+  6: "6 игроков",
+  8: "8 игроков",
+  10: "10 игроков",
+  12: "12 игроков",
 };
 
 export function formatHours(hours: HourWindow[]): string {
