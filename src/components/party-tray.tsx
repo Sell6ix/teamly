@@ -64,12 +64,13 @@ export function PartyTray() {
             key={index}
             className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
           >
-            {seat.kind === "you" ? (
-              <span className="text-sm">
-                <span className="font-medium text-white">{YOU_NAME}</span>
-                <span className="ml-2 text-xs text-white/40">это вы</span>
-              </span>
-            ) : null}
+                {seat.kind === "you" ? (
+                  <span className="text-sm">
+                    <span className="font-medium text-white">{YOU_NAME}</span>
+                    {" "}
+                    <span className="text-xs text-white/40">это вы</span>
+                  </span>
+                ) : null}
             {seat.kind === "player" ? (
               <>
                 <span className="text-sm">
