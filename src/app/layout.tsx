@@ -1,24 +1,33 @@
 import { Providers } from "@/components/providers";
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-sans",
+const onest = Onest({
+  variable: "--font-body",
+  subsets: ["latin", "cyrillic"],
+});
+
+const unbounded = Unbounded({
+  variable: "--font-display",
   subsets: ["latin", "cyrillic"],
 });
 
 export const metadata: Metadata = {
-  title: "Teamly — найди пати для кооператива",
+  title: "Teamly — каталог игр и пати",
   description:
-    "Подбор тиммейтов по игре, стилю, уровню и часам онлайна. Соберите пати за минуту.",
+    "Browse-first подбор пати: каталог игр, лобби с фильтрами и ссылка, которой можно кинуть друга.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="ru"
-      className={`${manrope.variable} dark h-full antialiased`}
+      className={`${onest.variable} ${unbounded.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col font-sans">

@@ -1,0 +1,180 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { useParty } from "@/components/party-context";
+import { YOU_NAME } from "@/lib/data";
+import { Check, Copy, Link2, PartyPopper, Users } from "lucide-react";
+import { useState } from "react";
+
+export function PartyTray() {
+  const {
+    seats,
+    partyName,
+    setPartyName,
+    joinedParty,
+    ready,
+    setReady,
+    kick,
+    leaveJoined,
+    filledCount,
+    joinCode,
+    copyShareLink,
+  } = useParty();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const full = filledCount === seats.length;
+  const canConfirm = filledCount >= 2;
+
+  const body = (
+    <>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <p className="flex items-center gap-2 font-display text-lg text-white">
+            <Users className="size-4 text-[var(--brand)]" />
+            {joinedParty ? "Вы в сборе" : "Ваша пати"}
+          </p>
+          <p className="mt-1 text-xs text-white/50">
+            {filledCount} из {seats.length} · код {joinCode}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="lg:hidden text-xs text-white/50"
+          onClick={() => setMobileOpen(false)}
+        >
+          Свернуть
+        </button>
+      </div>
+
+      {joinedParty ? (
+        <p className="mb-3 text-sm font-medium text-white/90">{partyName}</p>
+      ) : (
+        <label className="mb-3 block text-xs text-white/45">
+          Название
+          <input
+            value={partyName}
+            onChange={(event) => setPartyName(event.target.value)}
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--brand)]/50"
+          />
+        </label>
+      )}
+
+      <ol className="space-y-2">
+        {seats.map((seat, index) => (
+          <li
+            key={index}
+            className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
+          >
+            {seat.kind === "you" ? (
+              <span className="text-sm">
+                <span className="font-medium text-white">{YOU_NAME}</span>
+                <span className="ml-2 text-xs text-white/40">это вы</span>
+              </span>
+            ) : null}
+            {seat.kind === "player" ? (
+              <>
+                <span className="text-sm">
+                  <span className="font-medium text-white">{seat.player.name}</span>
+                  <span className="ml-2 text-xs text-white/40">{seat.player.role}</span>
+                </span>
+                {!joinedParty ? (
+                  <Button type="button" size="xs" variant="ghost" onClick={() => kick(seat.player.id)}>
+                    Убрать
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+            {seat.kind === "empty" ? (
+              <span className="text-sm text-white/35">Свободное место</span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-4 flex flex-col gap-2">
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          data-testid="copy-party-link"
+          onClick={() => void copyShareLink()}
+          className="border-white/15 bg-white/5"
+        >
+          <Copy data-icon="inline-start" />
+          Скопировать ссылку на пати
+        </Button>
+        <p className="flex items-center gap-1.5 text-[11px] text-white/40">
+          <Link2 className="size-3" />
+          /join/{joinCode}
+        </p>
+
+        {joinedParty ? (
+          <Button type="button" variant="outline" onClick={leaveJoined}>
+            Выйти из сбора
+          </Button>
+        ) : null}
+
+        <Button
+          type="button"
+          size="lg"
+          data-testid="confirm-party"
+          disabled={!canConfirm || ready}
+          onClick={() => setReady(true)}
+        >
+          {ready ? (
+            <>
+              <PartyPopper data-icon="inline-start" />
+              Пати готова — можно заходить
+            </>
+          ) : full ? (
+            "Подтвердить состав"
+          ) : canConfirm ? (
+            `Собраться ${filledCount} из ${seats.length}`
+          ) : (
+            `Нужно ещё ${Math.max(0, 2 - filledCount)}`
+          )}
+        </Button>
+        {ready ? (
+          <p className="flex items-center gap-1 text-xs text-emerald-300">
+            <Check className="size-3" />
+            Состав зафиксирован. Зовите людей в клиент игры.
+          </p>
+        ) : null}
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <aside className="hidden w-full shrink-0 lg:sticky lg:top-4 lg:block lg:w-80">
+        <div className="rounded-2xl border border-white/10 bg-[#121214]/90 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+          {body}
+        </div>
+      </aside>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+        {!mobileOpen ? (
+          <button
+            type="button"
+            data-testid="party-sheet-toggle"
+            onClick={() => setMobileOpen(true)}
+            className="mx-3 mb-3 flex w-[calc(100%-1.5rem)] items-center justify-between rounded-2xl border border-white/12 bg-[#121214]/95 px-4 py-3 text-left shadow-[0_-8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+          >
+            <span>
+              <span className="block font-display text-base text-white">
+                Пати · {filledCount}/{seats.length}
+              </span>
+              <span className="text-xs text-white/45">Открыть трей и ссылку</span>
+            </span>
+            <span className="rounded-md bg-[var(--brand)]/20 px-2 py-1 text-xs text-[var(--brand)]">
+              Открыть
+            </span>
+          </button>
+        ) : (
+          <div className="max-h-[75vh] overflow-y-auto rounded-t-3xl border border-white/12 bg-[#121214] p-4 shadow-[0_-16px_50px_rgba(0,0,0,0.55)]">
+            {body}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

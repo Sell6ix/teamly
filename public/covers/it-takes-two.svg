@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="It Takes Two">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081018"/>
+      <stop offset="100%" stop-color="#3d8bfd"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <circle cx="150" cy="240" r="55" fill="#ff8a65"/>
+  <circle cx="250" cy="240" r="55" fill="#64b5f6"/>
+  <path d="M175 240 Q200 280 225 240" fill="none" stroke="#fff" stroke-width="8" opacity="0.7"/>
+  <text x="28" y="520" fill="#fff" font-family="Georgia, serif" font-size="30" font-weight="700">IT TAKES TWO</text>
+</svg>

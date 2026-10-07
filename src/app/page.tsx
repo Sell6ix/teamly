@@ -1,5 +1,5 @@
-import { TeamlyApp } from "@/components/teamly-app";
+import { CatalogHome } from "@/components/catalog-home";
 
 export default function Home() {
-  return <TeamlyApp />;
+  return <CatalogHome />;
 }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="League of Legends">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#100e08"/>
+      <stop offset="100%" stop-color="#8a7340"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="560" fill="url(#bg)"/>
+  <path d="M200 120 L260 220 L200 420 L140 220 Z" fill="#c8aa6e"/>
+  <circle cx="200" cy="210" r="34" fill="#1a150c"/>
+  <text x="28" y="520" fill="#fff" font-family="Georgia, serif" font-size="34" font-weight="700">LEAGUE</text>
+</svg>
