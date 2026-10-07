@@ -2,7 +2,7 @@
 
 import { CoverImage } from "@/components/cover-image";
 import { PartyTray } from "@/components/party-tray";
-import { useJoinCodeBootstrap, useParty } from "@/components/party-context";
+import { useParty } from "@/components/party-context";
 import { SiteChrome } from "@/components/site-chrome";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -627,7 +627,23 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
 }
 
 export function JoinDeepLink({ code }: { code: string }) {
-  const ctx = useJoinCodeBootstrap(code);
+  const ctx = useParty();
+  const [status, setStatus] = useState<"loading" | "ok" | "missing">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void ctx.loadJoinCode(code).then((ok) => {
+        if (!cancelled) setStatus(ok ? "ok" : "missing");
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // intentionally once per code
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   return (
     <SiteChrome>
@@ -640,10 +656,12 @@ export function JoinDeepLink({ code }: { code: string }) {
           <h1 className="mt-2 font-display text-3xl text-white sm:text-4xl">
             Код {code.toUpperCase()}
           </h1>
-          <p className="mt-3 text-sm text-white/60">
-            {ctx.gameId
-              ? `Вы в контексте пати «${ctx.partyName}». Слоты: ${ctx.filledCount}/${ctx.seats.length}.`
-              : "Загружаем пати по коду…"}
+          <p className="mt-3 text-sm text-white/60" data-testid="join-status">
+            {status === "loading"
+              ? "Загружаем пати по коду…"
+              : status === "missing"
+                ? "Пати с таким кодом не найдена. Попросите хоста открыть сбор или обновить ссылку."
+                : `Вы в контексте пати «${ctx.partyName}». Слоты: ${ctx.filledCount}/${ctx.seats.length}.`}
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
