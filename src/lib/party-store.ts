@@ -5,6 +5,7 @@ import { YOU_NAME } from "@/lib/data";
 import type {
   GameId,
   HourWindow,
+  Language,
   OpenParty,
   PlayStyle,
   Player,
@@ -39,6 +40,7 @@ export type JoinSession = {
   startsAt?: string | null;
   region?: Region;
   voicePlatform?: VoicePlatform;
+  language?: Language;
   ownerUserId?: string | null;
   updatedAt: number;
 };
@@ -62,6 +64,7 @@ function rowToSession(row: typeof joinSessions.$inferSelect): JoinSession {
     startsAt: row.startsAt,
     region: (row.region as Region | null) ?? undefined,
     voicePlatform: (row.voicePlatform as VoicePlatform | null) ?? undefined,
+    language: ((row as { language?: string | null }).language as Language | null) ?? undefined,
     ownerUserId: row.ownerUserId,
     updatedAt: row.updatedAt instanceof Date ? row.updatedAt.getTime() : Number(row.updatedAt),
   };
@@ -121,6 +124,7 @@ export function sessionToOpenParty(session: JoinSession): OpenParty {
     startsAt: session.startsAt ?? null,
     region: session.region,
     voicePlatform: session.voicePlatform,
+    language: session.language,
     members: session.seats
       .filter((seat) => seat.kind !== "empty")
       .map((seat) => seat.name)
@@ -155,6 +159,7 @@ export function upsertJoinSession(
     startsAt: next.startsAt ?? null,
     region: next.region ?? null,
     voicePlatform: next.voicePlatform ?? null,
+    language: next.language ?? null,
     ownerUserId: next.ownerUserId ?? null,
     updatedAt: new Date(next.updatedAt),
   };
@@ -184,6 +189,7 @@ export function publishSession(
     startsAt?: string | null;
     region?: Region;
     voicePlatform?: VoicePlatform;
+    language?: Language;
   },
 ): OpenParty | null {
   const session = getJoinSession(code);
@@ -195,6 +201,7 @@ export function publishSession(
     startsAt: extras?.startsAt ?? session.startsAt ?? null,
     region: extras?.region ?? session.region,
     voicePlatform: extras?.voicePlatform ?? session.voicePlatform,
+    language: extras?.language ?? session.language,
   });
   const party = sessionToOpenParty(next);
   if (party.filled >= party.partySize) {

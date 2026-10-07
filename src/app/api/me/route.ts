@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db, ensureDb } from "@/db";
 import { blacklist, profiles } from "@/db/schema";
-import { REGIONS, VOICE_PLATFORMS, type UserProfile } from "@/lib/profile";
+import { LANGUAGES, REGIONS, VOICE_PLATFORMS, type UserProfile } from "@/lib/profile";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -18,6 +18,7 @@ function profileFromRow(row: typeof profiles.$inferSelect | undefined, fallbackN
       faceitUrl: "",
       region: "msk" as const,
       voicePlatform: "discord" as const,
+      language: "ru" as const,
       discordWebhookUrl: "",
     } satisfies UserProfile;
   }
@@ -34,6 +35,9 @@ function profileFromRow(row: typeof profiles.$inferSelect | undefined, fallbackN
     voicePlatform: (VOICE_PLATFORMS as readonly string[]).includes(row.voicePlatform)
       ? (row.voicePlatform as UserProfile["voicePlatform"])
       : "discord",
+    language: (LANGUAGES as readonly string[]).includes(row.language)
+      ? (row.language as UserProfile["language"])
+      : "ru",
     discordWebhookUrl: row.discordWebhookUrl,
   } satisfies UserProfile;
 }
@@ -102,6 +106,11 @@ export async function PUT(request: Request) {
       (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
         ? payload.voicePlatform
         : "discord",
+    language:
+      typeof payload.language === "string" &&
+      (LANGUAGES as readonly string[]).includes(payload.language)
+        ? payload.language
+        : "ru",
     discordWebhookUrl: String(payload.discordWebhookUrl ?? "").slice(0, 400),
     updatedAt: new Date(),
   };

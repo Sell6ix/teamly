@@ -30,6 +30,8 @@ import {
   playStyleLabel,
 } from "@/lib/labels";
 import {
+  languageLabel,
+  LANGUAGES,
   regionLabel,
   REGIONS,
   voiceLabel,
@@ -42,6 +44,7 @@ import { otherGamesFor, personIdOf, recentForGame, recentPersonIds } from "@/lib
 import type {
   Game,
   HourWindow,
+  Language,
   MatchResult,
   OpenParty,
   Region,
@@ -417,6 +420,27 @@ export function GameLobby({
                   </Chip>
                 ))}
               </ChipRow>
+              <ChipRow label="Язык">
+                <Chip
+                  active={filters.language === null}
+                  onClick={() => applyFilters({ ...filters, language: null })}
+                  testId="lang-any"
+                >
+                  Любой
+                </Chip>
+                {LANGUAGES.map((lang) => (
+                  <Chip
+                    key={lang}
+                    active={filters.language === lang}
+                    onClick={() =>
+                      applyFilters({ ...filters, language: lang as Language })
+                    }
+                    testId={`lang-${lang}`}
+                  >
+                    {languageLabel[lang]}
+                  </Chip>
+                ))}
+              </ChipRow>
             </div>
 
             <button
@@ -458,6 +482,7 @@ export function GameLobby({
                     roleTag: null,
                     region: null,
                     voicePlatform: null,
+                    language: null,
                   })
                 }
                 onPublish={() => void party.publishOpenParty()}
@@ -687,6 +712,7 @@ function PlayerCard({
           <p className="mt-1 text-sm text-white/50">
             {player.role} · {skillLabelFor(player.gameId, player.skill)}
             {player.region ? ` · ${regionLabel[player.region]}` : ""}
+            {player.language ? ` · ${languageLabel[player.language]}` : ""}
           </p>
           {otherGamesFor(player).length > 0 ? (
             <p className="mt-1 text-[11px] text-white/40">
@@ -805,6 +831,7 @@ function PartyCard({
         <span>{reasons[0]}</span>
         {party.region ? <span>{regionLabel[party.region]}</span> : null}
         {party.voicePlatform ? <span>{voiceLabel[party.voicePlatform]}</span> : null}
+        {party.language ? <span>{languageLabel[party.language]}</span> : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button

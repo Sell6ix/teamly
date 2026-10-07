@@ -1,26 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" role="img" aria-label="Valorant">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a0206"/>
-      <stop offset="40%" stop-color="#2a0610"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#0d0d12"/>
+      <stop offset="55%" stop-color="#1a0a12"/>
       <stop offset="100%" stop-color="#ff4655"/>
     </linearGradient>
-    <linearGradient id="slash" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fff5f6"/>
-      <stop offset="100%" stop-color="#ff4655"/>
+    <linearGradient id="v" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ff6b7a"/>
     </linearGradient>
-    <radialGradient id="glow" cx="70%" cy="20%" r="55%">
-      <stop offset="0%" stop-color="#ff4655" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#ff4655" stop-opacity="0"/>
-    </radialGradient>
   </defs>
   <rect width="400" height="560" fill="url(#bg)"/>
-  <rect width="400" height="560" fill="url(#glow)"/>
-  <path d="M0 420 L400 280 L400 560 L0 560 Z" fill="#000" opacity="0.28"/>
-  <path d="M48 450 L210 90 L275 90 L115 450 Z" fill="url(#slash)"/>
-  <path d="M195 450 L290 230 L348 230 L255 450 Z" fill="#fff" opacity="0.18"/>
-  <circle cx="318" cy="118" r="8" fill="#fff" opacity="0.85"/>
-  <circle cx="338" cy="148" r="4" fill="#ff4655"/>
-  <rect x="0" y="468" width="400" height="92" fill="#050205" opacity="0.55"/>
-  <text x="28" y="526" fill="#fff" font-family="Georgia, serif" font-size="40" font-weight="700" letter-spacing="4">VALORANT</text>
+  <!-- tactical grid -->
+  <g stroke="#ff4655" stroke-opacity="0.12" stroke-width="1">
+    <path d="M0 140 H400 M0 280 H400 M0 420 H400"/>
+    <path d="M80 0 V560 M200 0 V560 M320 0 V560"/>
+  </g>
+  <!-- agent silhouette / spike -->
+  <path d="M70 470 L200 70 L240 70 L110 470 Z" fill="url(#v)"/>
+  <path d="M210 470 L300 250 L345 250 L255 470 Z" fill="#ff4655" opacity="0.35"/>
+  <!-- spike-ish diamond -->
+  <path d="M310 120 L340 150 L310 210 L280 150 Z" fill="#ff4655"/>
+  <path d="M310 135 L328 150 L310 185 L292 150 Z" fill="#0d0d12"/>
+  <rect x="0" y="460" width="400" height="100" fill="#050508" opacity="0.65"/>
+  <text x="28" y="518" fill="#fff" font-family="Arial Black, Impact, sans-serif" font-size="42" letter-spacing="6">VALORANT</text>
+  <text x="28" y="542" fill="#ff4655" font-family="Georgia, serif" font-size="12" letter-spacing="3">5v5 TACTICAL</text>
 </svg>

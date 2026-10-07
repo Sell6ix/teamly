@@ -3,7 +3,7 @@
 import { isBlocked } from "@/lib/blacklist";
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
-import { loadProfile } from "@/lib/profile";
+import { languageLabel, loadProfile } from "@/lib/profile";
 import { personIdOf, rememberInvite } from "@/lib/recent";
 import { shareOrCopy } from "@/lib/share";
 import { getSession } from "next-auth/react";
@@ -498,6 +498,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
           startsAt: options?.startsAt ?? null,
           region: profile.region,
           voicePlatform: profile.voicePlatform,
+          language: profile.language,
         }),
       });
       const data = (await response.json()) as {
@@ -547,6 +548,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             bio: options?.bio || "Ищу пати по фильтрам лобби. Можно писать в Discord.",
             region: profile.region,
             voicePlatform: profile.voicePlatform,
+            language: profile.language,
             steamProfileUrl: profile.steamProfileUrl || null,
             discordUrl: profile.discordUrl || null,
             riotTag: profile.riotTag || null,
@@ -590,6 +592,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
       `${current.partyName} готова`,
       names.join(", "),
       current.joinedParty?.startsAt ? `Старт: ${current.joinedParty.startsAt}` : null,
+      profile.language ? `Язык: ${languageLabel[profile.language]}` : null,
       `Ссылка: ${url}`,
       profile.discordUrl ? `Discord: ${profile.discordUrl}` : null,
       profile.steamProfileUrl ? `Steam: ${profile.steamProfileUrl}` : null,

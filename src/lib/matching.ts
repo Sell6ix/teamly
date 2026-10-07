@@ -6,10 +6,11 @@ import {
   skillLabelFor,
 } from "./game-fields";
 import { hourLabel, playStyleLabel } from "./labels";
-import { regionLabel, voiceLabel } from "./profile";
+import { languageLabel, regionLabel, voiceLabel } from "./profile";
 import { personIdOf } from "./recent";
 import type {
   Game,
+  Language,
   MatchCriteria,
   MatchResult,
   OpenParty,
@@ -17,6 +18,17 @@ import type {
   Player,
   PlayerMatch,
 } from "./types";
+
+function effectiveLanguage(
+  region?: Player["region"] | OpenParty["region"],
+  language?: Language,
+): Language {
+  if (language) return language;
+  if (region === "eu") return "en";
+  if (region === "kz") return "kz";
+  if (region === "other") return "mixed";
+  return "ru";
+}
 
 function compatibleStyle(playerStyles: Player["playStyles"], wanted: MatchCriteria["playStyle"]) {
   if (playerStyles.includes(wanted)) return "exact";
@@ -111,6 +123,16 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
     }
   }
 
+  if (criteria.language) {
+    const lang = effectiveLanguage(player.region, player.language);
+    if (lang === criteria.language || lang === "mixed" || criteria.language === "mixed") {
+      score += 12;
+      reasons.unshift(`Язык: ${languageLabel[lang]}`);
+    } else {
+      score -= 14;
+    }
+  }
+
   if (criteria.recentPersonIds?.includes(personIdOf(player))) {
     score += 14;
     reasons.unshift("Недавно играли вместе");
@@ -193,6 +215,16 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
       score += 6;
     } else {
       score -= 4;
+    }
+  }
+
+  if (criteria.language) {
+    const lang = effectiveLanguage(party.region, party.language);
+    if (lang === criteria.language || lang === "mixed" || criteria.language === "mixed") {
+      score += 10;
+      reasons.push(`Язык: ${languageLabel[lang]}`);
+    } else {
+      score -= 12;
     }
   }
 

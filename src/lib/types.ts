@@ -49,6 +49,9 @@ export type GameType =
 
 export type Region = "msk" | "eu" | "kz" | "other";
 export type VoicePlatform = "discord" | "ingame" | "any";
+/** Voice / chat language for LFG */
+export type Language = "ru" | "en" | "ua" | "kz" | "mixed";
+export const LANGUAGES = ["ru", "en", "ua", "kz", "mixed"] as const;
 
 export type Game = {
   id: GameId;
@@ -76,6 +79,7 @@ export type Player = {
   timezone: string;
   region?: Region;
   voicePlatform?: VoicePlatform;
+  language?: Language;
   steamProfileUrl?: string | null;
   discordUrl?: string | null;
   riotTag?: string | null;
@@ -98,6 +102,7 @@ export type OpenParty = {
   startsAt?: string | null;
   region?: Region;
   voicePlatform?: VoicePlatform;
+  language?: Language;
   /** Real names already in the gathering (join is not dummy slots) */
   members?: string[];
 };
@@ -112,6 +117,7 @@ export type MatchCriteria = {
   roleTag?: string | null;
   region?: Region | null;
   voicePlatform?: VoicePlatform | null;
+  language?: Language | null;
   /** personId from local «недавно играли» */
   recentPersonIds?: string[];
   /** personIds hidden via local blacklist */

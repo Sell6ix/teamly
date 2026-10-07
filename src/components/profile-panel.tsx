@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import {
   defaultProfile,
+  languageLabel,
+  LANGUAGES,
   loadProfile,
   regionLabel,
   REGIONS,
@@ -211,6 +213,26 @@ export function ProfilePanel({
               </select>
             </label>
           </div>
+          <label className="block text-xs text-white/45">
+            Язык в пати
+            <select
+              value={draft.language}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  language: e.target.value as UserProfile["language"],
+                })
+              }
+              className={fieldClass}
+              data-testid="profile-language"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {languageLabel[lang]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="mt-5 flex gap-2">

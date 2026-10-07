@@ -62,6 +62,7 @@ export const profiles = sqliteTable("profiles", {
   faceitUrl: text("faceitUrl").notNull().default(""),
   region: text("region").notNull().default("msk"),
   voicePlatform: text("voicePlatform").notNull().default("discord"),
+  language: text("language").notNull().default("ru"),
   discordWebhookUrl: text("discordWebhookUrl").notNull().default(""),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
 });
@@ -98,6 +99,7 @@ export const joinSessions = sqliteTable("join_sessions", {
   startsAt: text("startsAt"),
   region: text("region"),
   voicePlatform: text("voicePlatform"),
+  language: text("language"),
   ownerUserId: text("ownerUserId"),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
 });

@@ -1,6 +1,8 @@
-import type { Region, VoicePlatform } from "./types";
+import type { Language, Region, VoicePlatform } from "./types";
+import { LANGUAGES } from "./types";
 
-export type { Region, VoicePlatform };
+export type { Language, Region, VoicePlatform };
+export { LANGUAGES };
 
 export const REGIONS: Region[] = ["msk", "eu", "kz", "other"];
 export const VOICE_PLATFORMS: VoicePlatform[] = ["discord", "ingame", "any"];
@@ -15,6 +17,7 @@ export type UserProfile = {
   faceitUrl: string;
   region: Region;
   voicePlatform: VoicePlatform;
+  language: Language;
   /** Optional Discord incoming webhook — confirm posts the party brief there. */
   discordWebhookUrl: string;
 };
@@ -32,6 +35,14 @@ export const voiceLabel: Record<VoicePlatform, string> = {
   any: "Любой голос",
 };
 
+export const languageLabel: Record<Language, string> = {
+  ru: "Русский",
+  en: "English",
+  ua: "Українська",
+  kz: "Қазақша",
+  mixed: "Микс",
+};
+
 export const PROFILE_STORAGE_KEY = "teamly-profile-v1";
 
 export function defaultProfile(): UserProfile {
@@ -44,6 +55,7 @@ export function defaultProfile(): UserProfile {
     faceitUrl: "",
     region: "msk",
     voicePlatform: "discord",
+    language: "ru",
     discordWebhookUrl: "",
   };
 }

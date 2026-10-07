@@ -1,8 +1,17 @@
 import { auth } from "@/auth";
 import { gameById } from "@/lib/matching";
 import { listLooking, upsertLooking } from "@/lib/party-store";
-import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
-import type { GameId, HourWindow, PlayStyle, Player, Region, SkillLevel, VoicePlatform } from "@/lib/types";
+import { LANGUAGES, REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
+import type {
+  GameId,
+  HourWindow,
+  Language,
+  PlayStyle,
+  Player,
+  Region,
+  SkillLevel,
+  VoicePlatform,
+} from "@/lib/types";
 import { HOURS, PLAY_STYLES, SKILL_LEVELS } from "@/lib/types";
 import { NextResponse } from "next/server";
 
@@ -85,6 +94,11 @@ export async function POST(request: Request) {
       typeof payload.voicePlatform === "string" &&
       (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
         ? (payload.voicePlatform as VoicePlatform)
+        : undefined,
+    language:
+      typeof payload.language === "string" &&
+      (LANGUAGES as readonly string[]).includes(payload.language)
+        ? (payload.language as Language)
         : undefined,
     steamProfileUrl: typeof payload.steamProfileUrl === "string" ? payload.steamProfileUrl : null,
     discordUrl: typeof payload.discordUrl === "string" ? payload.discordUrl : null,

@@ -63,6 +63,7 @@ export function ensureDb() {
       faceitUrl TEXT NOT NULL DEFAULT '',
       region TEXT NOT NULL DEFAULT 'msk',
       voicePlatform TEXT NOT NULL DEFAULT 'discord',
+      language TEXT NOT NULL DEFAULT 'ru',
       discordWebhookUrl TEXT NOT NULL DEFAULT '',
       updatedAt INTEGER NOT NULL
     );
@@ -91,6 +92,7 @@ export function ensureDb() {
       startsAt TEXT,
       region TEXT,
       voicePlatform TEXT,
+      language TEXT,
       ownerUserId TEXT,
       updatedAt INTEGER NOT NULL
     );
@@ -104,6 +106,17 @@ export function ensureDb() {
       updatedAt INTEGER NOT NULL
     );
   `);
+  // Lightweight migrations for existing local DBs
+  try {
+    sqlite.exec(`ALTER TABLE profiles ADD COLUMN language TEXT NOT NULL DEFAULT 'ru'`);
+  } catch {
+    /* already present */
+  }
+  try {
+    sqlite.exec(`ALTER TABLE join_sessions ADD COLUMN language TEXT`);
+  } catch {
+    /* already present */
+  }
   migrated = true;
 }
 

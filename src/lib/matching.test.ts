@@ -94,6 +94,23 @@ describe("scorePlayer", () => {
     expect(result.players.some((row) => row.player.id === "you-valorant")).toBe(true);
   });
 
+  it("boosts matching language in the feed", () => {
+    const result = matchPeople({
+      gameId: "valorant",
+      playStyle: "ranked",
+      partySize: 5,
+      skill: 4,
+      hours: ["evening"],
+      language: "en",
+    });
+    expect(result.players.length).toBeGreaterThan(0);
+    expect(
+      result.players.some((row) =>
+        row.reasons.some((reason) => reason.includes("Язык")),
+      ),
+    ).toBe(true);
+  });
+
   it("hides blacklisted people from the feed", () => {
     const open = matchPeople({
       gameId: "cs2",

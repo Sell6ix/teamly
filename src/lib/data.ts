@@ -1,4 +1,4 @@
-import type { Game, OpenParty, Player } from "./types";
+import type { Game, Language, OpenParty, Player } from "./types";
 
 export const games: Game[] = [
   {
@@ -1537,3 +1537,17 @@ export const openParties: OpenParty[] = [
 ];
 
 export const YOU_NAME = "Иван";
+
+const LANG_CYCLE: Language[] = ["ru", "ru", "en", "mixed", "ua", "kz", "en", "ru"];
+
+players.forEach((player, index) => {
+  if (!player.language) {
+    player.language = LANG_CYCLE[index % LANG_CYCLE.length];
+  }
+});
+
+openParties.forEach((party, index) => {
+  if (!party.language) {
+    party.language = LANG_CYCLE[index % LANG_CYCLE.length];
+  }
+});

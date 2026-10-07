@@ -11,16 +11,17 @@ describe("lobby URL", () => {
     expect(defaults.skill).toBe(3);
   });
 
-  it("reads role, region and voice from query", () => {
+  it("reads role, region, voice and language from query", () => {
     const valorant = games.find((g) => g.id === "valorant")!;
     const filters = parseLobbySearchParams(
       valorant,
-      new URLSearchParams("size=5&role=duelist&region=msk&voice=discord"),
+      new URLSearchParams("size=5&role=duelist&region=msk&voice=discord&lang=en"),
       "ranked",
     );
     expect(filters.playStyle).toBe("ranked");
     expect(filters.roleTag).toBe("duelist");
     expect(filters.region).toBe("msk");
     expect(filters.voicePlatform).toBe("discord");
+    expect(filters.language).toBe("en");
   });
 });

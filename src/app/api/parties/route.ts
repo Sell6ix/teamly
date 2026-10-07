@@ -9,10 +9,11 @@ import {
   publishedCounts,
   upsertJoinSession,
 } from "@/lib/party-store";
-import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
+import { LANGUAGES, REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
 import type {
   GameId,
   HourWindow,
+  Language,
   PlayStyle,
   Region,
   SkillLevel,
@@ -115,8 +116,13 @@ export async function POST(request: Request) {
     (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
       ? (payload.voicePlatform as VoicePlatform)
       : undefined;
+  const language =
+    typeof payload.language === "string" &&
+    (LANGUAGES as readonly string[]).includes(payload.language)
+      ? (payload.language as Language)
+      : undefined;
 
-  const party = publishSession(code, note, { startsAt, region, voicePlatform });
+  const party = publishSession(code, note, { startsAt, region, voicePlatform, language });
   if (!party) {
     return NextResponse.json({ error: "Не удалось открыть сбор." }, { status: 500 });
   }

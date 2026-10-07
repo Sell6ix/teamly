@@ -54,7 +54,6 @@ export function PartyTray() {
   const [startsAt, setStartsAt] = useState("сегодня 21:00");
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showLfp, setShowLfp] = useState(false);
-  const [showAllSeats, setShowAllSeats] = useState(false);
   const canNativeShare = useSyncExternalStore(subscribeNoop, getCanShare, () => false);
   const full = filledCount === seats.length;
   const canConfirm = filledCount >= 2;
@@ -127,72 +126,90 @@ export function PartyTray() {
         </label>
       )}
 
-      <ol className="max-h-52 space-y-2 overflow-y-auto pr-1">
-        {(showAllSeats || seats.length <= 5
-          ? seats
-          : [
-              ...seats.filter((seat) => seat.kind !== "empty"),
-              ...seats.filter((seat) => seat.kind === "empty").slice(0, 1),
-            ]
-        ).map((seat, index) => (
-          <li
-            key={index}
-            className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2"
-          >
-            {seat.kind === "you" ? (
-              <span className="min-w-0 text-sm">
-                <span className="font-medium text-white">
-                  {youProfile.displayName || YOU_NAME}
-                </span>{" "}
-                <span className="text-xs text-white/40">это вы</span>
-                <div className="mt-1">
-                  <ProfileLinks
-                    steamProfileUrl={youProfile.steamProfileUrl}
-                    discordUrl={youProfile.discordUrl}
-                    riotTag={youProfile.riotTag}
-                    faceitUrl={youProfile.faceitUrl}
-                    compact
-                  />
-                </div>
-              </span>
-            ) : null}
-            {seat.kind === "player" ? (
-              <>
-                <span className="min-w-0 text-sm">
-                  <span className="font-medium text-white">{seat.player.name}</span>
-                  <span className="ml-2 text-xs text-white/40">{seat.player.role}</span>
-                  <div className="mt-1">
+      <ol className="space-y-1.5" data-testid="party-seats">
+        {seats
+          .map((seat, index) => ({ seat, index }))
+          .filter(({ seat }) => seat.kind !== "empty")
+          .map(({ seat, index }) => (
+            <li
+              key={index}
+              className="flex items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5"
+            >
+              {seat.kind === "you" ? (
+                <span className="min-w-0 text-sm leading-tight">
+                  <span className="font-medium text-white">
+                    {youProfile.displayName || YOU_NAME}
+                  </span>{" "}
+                  <span className="text-[11px] text-white/40">это вы</span>
+                  <div className="mt-0.5">
                     <ProfileLinks
-                      steamProfileUrl={seat.player.steamProfileUrl}
-                      discordUrl={seat.player.discordUrl}
-                      riotTag={seat.player.riotTag}
-                      faceitUrl={seat.player.faceitUrl}
+                      steamProfileUrl={youProfile.steamProfileUrl}
+                      discordUrl={youProfile.discordUrl}
+                      riotTag={youProfile.riotTag}
+                      faceitUrl={youProfile.faceitUrl}
                       compact
                     />
                   </div>
                 </span>
-                {!joinedParty ? (
-                  <Button type="button" size="xs" variant="ghost" onClick={() => kick(seat.player.id)}>
-                    Убрать
-                  </Button>
-                ) : null}
-              </>
-            ) : null}
-            {seat.kind === "empty" ? (
-              <span className="text-sm text-white/35">Свободное место</span>
-            ) : null}
-          </li>
-        ))}
+              ) : null}
+              {seat.kind === "player" ? (
+                <>
+                  <span className="min-w-0 text-sm leading-tight">
+                    <span className="font-medium text-white">{seat.player.name}</span>
+                    <span className="ml-2 text-[11px] text-white/40">{seat.player.role}</span>
+                    <div className="mt-0.5">
+                      <ProfileLinks
+                        steamProfileUrl={seat.player.steamProfileUrl}
+                        discordUrl={seat.player.discordUrl}
+                        riotTag={seat.player.riotTag}
+                        faceitUrl={seat.player.faceitUrl}
+                        compact
+                      />
+                    </div>
+                  </span>
+                  {!joinedParty ? (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => kick(seat.player.id)}
+                    >
+                      Убрать
+                    </Button>
+                  ) : null}
+                </>
+              ) : null}
+            </li>
+          ))}
       </ol>
-      {!showAllSeats && seats.length > 5 ? (
-        <button
-          type="button"
-          className="mt-2 text-[11px] text-white/45 hover:text-white/70"
-          onClick={() => setShowAllSeats(true)}
-        >
-          Показать все {seats.length} слотов
-        </button>
-      ) : null}
+      {(() => {
+        const emptyIndexes = seats
+          .map((seat, index) => ({ seat, index }))
+          .filter(({ seat }) => seat.kind === "empty");
+        if (emptyIndexes.length === 0) return null;
+        if (emptyIndexes.length > 4) {
+          return (
+            <p
+              className="mt-2 rounded-md border border-dashed border-white/12 px-2.5 py-2 text-center text-xs text-white/40"
+              data-testid="party-empty-seats"
+            >
+              Ещё {emptyIndexes.length} свободных мест
+            </p>
+          );
+        }
+        return (
+          <ul className="mt-2 grid grid-cols-2 gap-1.5" data-testid="party-empty-seats">
+            {emptyIndexes.map(({ index }) => (
+              <li
+                key={index}
+                className="rounded-md border border-dashed border-white/12 px-2 py-1.5 text-center text-[11px] text-white/35"
+              >
+                Свободно
+              </li>
+            ))}
+          </ul>
+        );
+      })()}
 
       <div className="mt-4 flex flex-col gap-2">
         {!joinedParty && !published ? (

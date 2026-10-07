@@ -1,8 +1,9 @@
 import { playStylesFor, roleFacetFor } from "./game-fields";
-import { REGIONS, VOICE_PLATFORMS } from "./profile";
+import { LANGUAGES, REGIONS, VOICE_PLATFORMS } from "./profile";
 import type {
   Game,
   HourWindow,
+  Language,
   MatchCriteria,
   PlayStyle,
   Region,
@@ -19,6 +20,7 @@ export type LobbyFilters = {
   roleTag: string | null;
   region: Region | null;
   voicePlatform: VoicePlatform | null;
+  language: Language | null;
 };
 
 export function defaultLobbyFilters(game: Game): LobbyFilters {
@@ -36,6 +38,7 @@ export function defaultLobbyFilters(game: Game): LobbyFilters {
     roleTag: null,
     region: null,
     voicePlatform: null,
+    language: null,
   };
 }
 
@@ -91,7 +94,22 @@ export function parseLobbySearchParams(
       ? (voiceRaw as VoicePlatform)
       : null;
 
-  return { playStyle, partySize, skill, hours, roleTag, region, voicePlatform };
+  const langRaw = params.get("lang");
+  const language =
+    langRaw && (LANGUAGES as readonly string[]).includes(langRaw)
+      ? (langRaw as Language)
+      : null;
+
+  return {
+    playStyle,
+    partySize,
+    skill,
+    hours,
+    roleTag,
+    region,
+    voicePlatform,
+    language,
+  };
 }
 
 /** Query params only (style lives in `/g/{game}/{style}` when using the alias). */
@@ -113,6 +131,7 @@ export function lobbyFiltersToParams(
   if (filters.roleTag) params.set("role", filters.roleTag);
   if (filters.region) params.set("region", filters.region);
   if (filters.voicePlatform) params.set("voice", filters.voicePlatform);
+  if (filters.language) params.set("lang", filters.language);
   return params;
 }
 
@@ -133,5 +152,6 @@ export function filtersToCriteria(gameId: Game["id"], filters: LobbyFilters): Ma
     roleTag: filters.roleTag,
     region: filters.region,
     voicePlatform: filters.voicePlatform,
+    language: filters.language,
   };
 }

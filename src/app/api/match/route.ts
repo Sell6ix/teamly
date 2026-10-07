@@ -1,10 +1,11 @@
 import { roleFacetFor } from "@/lib/game-fields";
 import { gameById, matchPeople } from "@/lib/matching";
 import { listLooking, listPublishedParties } from "@/lib/party-store";
-import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
+import { LANGUAGES, REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
 import type {
   GameId,
   HourWindow,
+  Language,
   MatchCriteria,
   PlayStyle,
   Region,
@@ -85,6 +86,11 @@ export async function POST(request: Request) {
     (VOICE_PLATFORMS as readonly string[]).includes(payload.voicePlatform)
       ? (payload.voicePlatform as VoicePlatform)
       : null;
+  const language =
+    typeof payload.language === "string" &&
+    (LANGUAGES as readonly string[]).includes(payload.language)
+      ? (payload.language as Language)
+      : null;
 
   const recentPersonIds = Array.isArray(payload.recentPersonIds)
     ? payload.recentPersonIds.filter((item): item is string => typeof item === "string")
@@ -102,6 +108,7 @@ export async function POST(request: Request) {
     roleTag,
     region,
     voicePlatform,
+    language,
     recentPersonIds,
     blockedPersonIds,
   };
