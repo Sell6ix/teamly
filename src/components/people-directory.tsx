@@ -11,7 +11,7 @@ import {
   type BlacklistEntry,
 } from "@/lib/blacklist";
 import { games } from "@/lib/data";
-import { useT } from "@/lib/i18n/context";
+import { useLocale, useT } from "@/lib/i18n/context";
 import {
   allPeople,
   filterPeople,
@@ -31,7 +31,8 @@ export function PeopleDirectory({
   initialGame?: GameId | "all";
 }) {
   const t = useT();
-  const people = useMemo(() => allPeople(), []);
+  const { locale } = useLocale();
+  const people = useMemo(() => allPeople(locale), [locale]);
   const [query, setQuery] = useState(initialQuery);
   const [gameId, setGameId] = useState<GameId | "all">(initialGame);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
@@ -40,7 +41,7 @@ export function PeopleDirectory({
     setBlacklist(loadBlacklist());
   }, []);
 
-  const filtered = filterPeople(people, query, gameId);
+  const filtered = filterPeople(people, query, gameId, locale);
 
   function toggleBlock(person: PersonSummary) {
     if (isBlocked(person.personId, blacklist)) {
@@ -161,7 +162,7 @@ export function PeopleDirectory({
                       />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {person.gameIds.map(gameName).join(" · ")}
+                      {person.gameIds.map((id) => gameName(id, locale)).join(" · ")}
                       {person.region ? ` · ${t(`region.${person.region}`)}` : ""}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground/80">

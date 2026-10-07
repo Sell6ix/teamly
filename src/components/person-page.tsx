@@ -9,7 +9,7 @@ import {
   loadBlacklist,
   unblockPerson,
 } from "@/lib/blacklist";
-import { useT } from "@/lib/i18n/context";
+import { useLocale, useT } from "@/lib/i18n/context";
 import { gameName, personById, playersOfPerson } from "@/lib/people";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -17,8 +17,9 @@ import { toast } from "sonner";
 
 export function PersonPage({ personId }: { personId: string }) {
   const t = useT();
-  const person = useMemo(() => personById(personId), [personId]);
-  const rows = useMemo(() => playersOfPerson(personId), [personId]);
+  const { locale } = useLocale();
+  const person = useMemo(() => personById(personId, locale), [personId, locale]);
+  const rows = useMemo(() => playersOfPerson(personId, locale), [personId, locale]);
   const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export function PersonPage({ personId }: { personId: string }) {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground">{gameName(player.gameId)}</p>
+                    <p className="font-medium text-foreground">{gameName(player.gameId, locale)}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {player.role} · {t("people.lookingFor", { n: player.lookingForSize })}
                     </p>

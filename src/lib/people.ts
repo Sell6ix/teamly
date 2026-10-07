@@ -1,4 +1,6 @@
 import { games, players } from "./data";
+import { gameNameEn, localizePlayer } from "./demo-locale";
+import type { Locale } from "./i18n/messages";
 import { personIdOf } from "./recent";
 import type { GameId, Player, Region, VoicePlatform } from "./types";
 
@@ -17,9 +19,10 @@ export type PersonSummary = {
   bios: string[];
 };
 
-export function allPeople(): PersonSummary[] {
+export function allPeople(locale: Locale = "ru"): PersonSummary[] {
   const map = new Map<string, PersonSummary>();
-  for (const player of players) {
+  for (const raw of players) {
+    const player = localizePlayer(raw, locale);
     const personId = personIdOf(player);
     const existing = map.get(personId);
     if (!existing) {
@@ -56,19 +59,28 @@ export function allPeople(): PersonSummary[] {
   }
   return [...map.values()].sort((a, b) => {
     if (a.online !== b.online) return Number(b.online) - Number(a.online);
-    return a.name.localeCompare(b.name, "ru");
+    return a.name.localeCompare(b.name, locale === "en" ? "en" : "ru");
   });
 }
 
-export function personById(personId: string): PersonSummary | undefined {
-  return allPeople().find((person) => person.personId === personId);
+export function personById(
+  personId: string,
+  locale: Locale = "ru",
+): PersonSummary | undefined {
+  return allPeople(locale).find((person) => person.personId === personId);
 }
 
-export function playersOfPerson(personId: string): Player[] {
-  return players.filter((player) => personIdOf(player) === personId);
+export function playersOfPerson(
+  personId: string,
+  locale: Locale = "ru",
+): Player[] {
+  return players
+    .filter((player) => personIdOf(player) === personId)
+    .map((player) => localizePlayer(player, locale));
 }
 
-export function gameName(gameId: GameId): string {
+export function gameName(gameId: GameId, locale: Locale = "ru"): string {
+  if (locale === "en" && gameNameEn[gameId]) return gameNameEn[gameId]!;
   return games.find((game) => game.id === gameId)?.name ?? gameId;
 }
 
@@ -76,6 +88,7 @@ export function filterPeople(
   people: PersonSummary[],
   query: string,
   gameId?: GameId | "all",
+  locale: Locale = "ru",
 ): PersonSummary[] {
   const q = query.trim().toLowerCase();
   return people.filter((person) => {
@@ -85,7 +98,7 @@ export function filterPeople(
     if (!q) return true;
     const hay = [
       person.name,
-      ...person.gameIds.map(gameName),
+      ...person.gameIds.map((id) => gameName(id, locale)),
       ...person.roles,
       person.region ?? "",
       person.riotTag ?? "",

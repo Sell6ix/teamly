@@ -1,8 +1,8 @@
 "use client";
 
 import { isBlocked } from "@/lib/blacklist";
-import { tStored } from "@/lib/i18n/context";
-import { YOU_NAME } from "@/lib/data";
+import { youName } from "@/lib/demo-locale";
+import { readStoredLocale, tStored } from "@/lib/i18n/context";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { languageLabel, loadProfile } from "@/lib/profile";
 import { personIdOf, rememberInvite } from "@/lib/recent";
@@ -104,7 +104,7 @@ function makeJoinCode() {
 function defaultSnapshot(stableCode = true): PartySnapshot {
   return {
     joinCode: stableCode ? "·····" : makeJoinCode(),
-    partyName: tStored("party.defaultName", { name: YOU_NAME }),
+    partyName: tStored("party.defaultName", { name: youName(readStoredLocale()) }),
     seats: makeSeats(5),
     joinedParty: null,
     ready: false,
@@ -178,7 +178,13 @@ function writeSnapshot(next: PartySnapshot) {
 
 function seatsToStored(seats: Seat[]): StoredSeat[] {
   return seats.map((seat) => {
-    if (seat.kind === "you") return { kind: "you", name: YOU_NAME, role: tStored("party.hostRole") };
+    if (seat.kind === "you") {
+      return {
+        kind: "you",
+        name: youName(readStoredLocale()),
+        role: tStored("party.hostRole"),
+      };
+    }
     if (seat.kind === "player") {
       return { kind: "player", name: seat.player.name, role: seat.player.role };
     }
@@ -225,7 +231,7 @@ async function syncJoinToServer(snapshot: PartySnapshot) {
         published: snapshot.published,
         note: snapshot.joinedParty?.note ?? "",
         micRequired: true,
-        leader: YOU_NAME,
+        leader: youName(readStoredLocale()),
         ready: snapshot.ready,
       }),
     });
@@ -284,7 +290,9 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         commit({
           ...current,
           joinCode: makeJoinCode(),
-          partyName: tStored("party.defaultName", { name: YOU_NAME }),
+          partyName: tStored("party.defaultName", {
+            name: youName(readStoredLocale()),
+          }),
           seats: makeSeats(size),
           joinedParty: null,
           ready: false,
@@ -405,7 +413,9 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     commit({
       ...current,
       joinCode: makeJoinCode(),
-      partyName: tStored("party.defaultName", { name: YOU_NAME }),
+      partyName: tStored("party.defaultName", {
+        name: youName(readStoredLocale()),
+      }),
       seats: makeSeats(current.seats.length),
       joinedParty: null,
       ready: false,
@@ -545,7 +555,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             skill: current.lobbyMeta.skill,
             hours: current.lobbyMeta.hours,
             accountId: session?.user?.id || profile.accountId || "you",
-            name: profile.displayName || session?.user?.name || YOU_NAME,
+            name:
+              profile.displayName ||
+              session?.user?.name ||
+              youName(readStoredLocale()),
             role: options?.role || tStored("party.lookingRole"),
             bio: options?.bio || tStored("party.lookingBio"),
             region: profile.region,
@@ -584,7 +597,9 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     const profile = loadProfile();
     const names = current.seats
       .map((seat) => {
-        if (seat.kind === "you") return profile.displayName || YOU_NAME;
+        if (seat.kind === "you") {
+          return profile.displayName || youName(readStoredLocale());
+        }
         if (seat.kind === "player") return seat.player.name;
         return null;
       })

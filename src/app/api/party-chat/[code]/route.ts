@@ -1,9 +1,52 @@
 import { auth } from "@/auth";
+import { db, ensureDb } from "@/db";
+import { profiles } from "@/db/schema";
+import {
+  normalizeDiscordWebhookUrl,
+  postDiscordMessage,
+  postDiscordWebhook,
+} from "@/lib/discord";
+import { discordBotConfigured } from "@/lib/env";
 import { listPartyMessages, postPartyMessage } from "@/lib/party-chat";
 import { normalizeCode } from "@/lib/party-store";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+ensureDb();
+
 type Ctx = { params: Promise<{ code: string }> };
+
+/** Best-effort mirror to Discord bot channel and/or the author's saved webhook. */
+async function bridgePartyChatToDiscord(input: {
+  code: string;
+  authorName: string;
+  body: string;
+  userId: string | null;
+}) {
+  const line = `💬 **${input.code}** · ${input.authorName}: ${input.body}`.slice(
+    0,
+    1900,
+  );
+  try {
+    if (discordBotConfigured()) {
+      await postDiscordMessage(line);
+    }
+  } catch {
+    /* no-op */
+  }
+  if (!input.userId) return;
+  try {
+    const row = db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, input.userId))
+      .get();
+    const webhook = normalizeDiscordWebhookUrl(row?.discordWebhookUrl ?? "");
+    if (webhook) await postDiscordWebhook(webhook, line);
+  } catch {
+    /* no-op */
+  }
+}
 
 export async function GET(_request: Request, ctx: Ctx) {
   const { code: raw } = await ctx.params;
@@ -48,8 +91,21 @@ export async function POST(request: Request, ctx: Ctx) {
     body: text,
   });
   if ("error" in result) {
-    const status = result.error === "empty" ? 400 : 400;
-    return NextResponse.json({ error: result.error }, { status });
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
-  return NextResponse.json({ message: result });
+
+  void bridgePartyChatToDiscord({
+    code,
+    authorName,
+    body: result.body,
+    userId: authorId,
+  });
+
+  return NextResponse.json({
+    message: result,
+    discord:
+      discordBotConfigured() || Boolean(authorId)
+        ? "attempted"
+        : "skipped",
+  });
 }

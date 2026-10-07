@@ -132,6 +132,31 @@ describe("scorePlayer", () => {
     expect(reasons).not.toMatch(/Язык|Тот же стиль/);
   });
 
+  it("localizes demo player and party strings for EN", () => {
+    const result = matchPeople({
+      gameId: "valorant",
+      playStyle: "ranked",
+      partySize: 5,
+      skill: 4,
+      hours: ["evening"],
+      locale: "en",
+    });
+    const cyrillic = /[А-Яа-яЁё]/;
+    for (const row of result.players) {
+      expect(row.player.name).not.toMatch(cyrillic);
+      expect(row.player.role).not.toMatch(cyrillic);
+      expect(row.player.bio).not.toMatch(cyrillic);
+    }
+    for (const row of result.parties) {
+      expect(row.party.name).not.toMatch(cyrillic);
+      expect(row.party.leader).not.toMatch(cyrillic);
+      expect(row.party.note).not.toMatch(cyrillic);
+    }
+    expect(result.players.some((row) => row.player.name === "Kira_Neon")).toBe(
+      true,
+    );
+  });
+
   it("hides blacklisted people from the feed", () => {
     const open = matchPeople({
       gameId: "cs2",

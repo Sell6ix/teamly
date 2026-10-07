@@ -2,10 +2,10 @@
 
 import { PartyChat } from "@/components/party-chat";
 import { ProfileLinks } from "@/components/profile-links";
-import { useT } from "@/lib/i18n/context";
+import { useLocale, useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
-import { YOU_NAME } from "@/lib/data";
+import { youName } from "@/lib/demo-locale";
 import {
   lfpTemplatesFor,
   loadProfile,
@@ -42,6 +42,7 @@ export function PartyTray() {
     gameId,
   } = useParty();
   const t = useT();
+  const { locale } = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -67,8 +68,11 @@ export function PartyTray() {
   const full = filledCount === seats.length;
   const canConfirm = filledCount >= 2;
   const templates = useMemo(
-    () => (gameId ? lfpTemplatesFor(gameId) : lfpTemplatesFor("valorant")),
-    [gameId],
+    () =>
+      gameId
+        ? lfpTemplatesFor(gameId, locale)
+        : lfpTemplatesFor("valorant", locale),
+    [gameId, locale],
   );
   const youProfile = useMemo(() => loadProfile(), [mobileOpen, published]);
 
@@ -147,7 +151,7 @@ export function PartyTray() {
               {seat.kind === "you" ? (
                 <span className="min-w-0 text-sm leading-tight">
                   <span className="font-medium text-white">
-                    {youProfile.displayName || YOU_NAME}
+                    {youProfile.displayName || youName(locale)}
                   </span>{" "}
                   <span className="text-[11px] text-white/40">{t("tray.you")}</span>
                   <div className="mt-0.5">

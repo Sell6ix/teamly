@@ -16,6 +16,7 @@ import {
   roleOptionLabel,
   skillLabelFor,
 } from "@/lib/game-fields";
+import { localizeParty } from "@/lib/demo-locale";
 import { useLocale, useT } from "@/lib/i18n/context";
 import {
   defaultLobbyFilters,
@@ -919,42 +920,44 @@ function PartyCard({
 export function PartyDeepLink({ party }: { party: OpenParty }) {
   const ctx = useParty();
   const t = useT();
+  const { locale } = useLocale();
+  const localized = useMemo(() => localizeParty(party, locale), [party, locale]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => ctx.applyOpenParty(party), 0);
+    const timer = window.setTimeout(() => ctx.applyOpenParty(localized), 0);
     return () => window.clearTimeout(timer);
-  }, [ctx, party]);
+  }, [ctx, localized]);
 
   return (
     <SiteChrome>
       <div className="dark flex flex-1 flex-col bg-[#0b0b0d] text-foreground">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
-        <Link href={`/g/${party.gameId}`} className="text-xs text-white/50 hover:text-white/80">
+        <Link href={`/g/${localized.gameId}`} className="text-xs text-white/50 hover:text-white/80">
           {t("deep.backLobby")}
         </Link>
         <div className="animate-fade-up rounded-3xl border border-white/10 bg-white/[0.03] p-6">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("deep.openGathering")}</p>
-          <h1 className="mt-2 font-display text-3xl text-white sm:text-4xl">{party.name}</h1>
+          <h1 className="mt-2 font-display text-3xl text-white sm:text-4xl">{localized.name}</h1>
           <p className="mt-3 text-sm text-white/60">
-            {party.leader} · {t(`style.${party.playStyle}`)} ·{" "}
+            {localized.leader} · {t(`style.${localized.playStyle}`)} ·{" "}
             {t("deep.freeOf", {
-              free: party.partySize - party.filled,
-              total: party.partySize,
+              free: localized.partySize - localized.filled,
+              total: localized.partySize,
             })}
           </p>
-          <p className="mt-4 text-sm leading-6 text-white/70">{party.note}</p>
+          <p className="mt-4 text-sm leading-6 text-white/70">{localized.note}</p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Button
               type="button"
               size="lg"
               data-testid="deep-join-party"
-              disabled={ctx.joinedParty?.id === party.id}
-              onClick={() => ctx.joinParty(party)}
+              disabled={ctx.joinedParty?.id === localized.id}
+              onClick={() => ctx.joinParty(localized)}
             >
               {t("deep.join")}
             </Button>
             <Link
-              href={`/g/${party.gameId}`}
+              href={`/g/${localized.gameId}`}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white transition hover:bg-white/10"
             >
               {t("deep.openLobby")}

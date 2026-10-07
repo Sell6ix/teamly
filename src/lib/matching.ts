@@ -1,4 +1,5 @@
 import { games, openParties, players } from "./data";
+import { localizeParty, localizePlayer } from "./demo-locale";
 import {
   playerHasRoleTag,
   roleFacetFor,
@@ -171,7 +172,7 @@ export function scorePlayer(player: Player, criteria: MatchCriteria): PlayerMatc
   }
 
   return {
-    player,
+    player: localizePlayer(player, localeOf(criteria)),
     score: Math.min(99, Math.max(1, Math.round(score))),
     reasons,
   };
@@ -269,7 +270,7 @@ export function scoreParty(party: OpenParty, criteria: MatchCriteria): PartyMatc
   }
 
   return {
-    party,
+    party: localizeParty(party, localeOf(criteria)),
     score: Math.min(99, Math.round(score)),
     reasons,
   };
