@@ -2,6 +2,7 @@
 
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
+import { shareOrCopy } from "@/lib/share";
 import type {
   GameId,
   HourWindow,
@@ -65,7 +66,7 @@ type PartyContextValue = {
   applyOpenParty: (party: OpenParty, autoJoin?: boolean) => void;
   publishOpenParty: () => Promise<OpenParty | null>;
   shareUrl: string;
-  copyShareLink: () => Promise<void>;
+  copyShareLink: (prefer?: "auto" | "share" | "copy") => Promise<void>;
   bumpFeed: () => void;
 };
 
@@ -476,15 +477,23 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
     }
   }, [commit]);
 
-  const copyShareLink = useCallback(async () => {
+  const copyShareLink = useCallback(async (prefer: "auto" | "share" | "copy" = "auto") => {
     const current = ensureClientSnapshot();
     await syncJoinToServer(current);
     const url = `${window.location.origin}/join/${current.joinCode}`;
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Ссылка на пати скопирована");
-    } catch {
-      toast.error("Не удалось скопировать ссылку");
+      const mode = await shareOrCopy(
+        {
+          title: `Teamly · ${current.partyName}`,
+          text: "Залетай в пати",
+          url,
+        },
+        prefer,
+      );
+      if (mode === "copied") toast.success("Ссылка на пати скопирована");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Не удалось поделиться ссылкой");
     }
   }, []);
 

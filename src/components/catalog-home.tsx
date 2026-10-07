@@ -6,22 +6,10 @@ import { catalogGames } from "@/lib/catalog";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-const genreFilters = ["Все", "Шутер", "MOBA", "Кооп", "Хоррор"] as const;
-
-function matchesGenre(genre: string, filter: string) {
-  if (filter === "Все") return true;
-  if (filter === "Шутер") return /шутер|battle royale|тактический/i.test(genre);
-  if (filter === "MOBA") return /moba/i.test(genre);
-  if (filter === "Кооп") return /кооп|pve/i.test(genre);
-  if (filter === "Хоррор") return /хоррор/i.test(genre);
-  return true;
-}
-
 export function CatalogHome() {
   const baseGames = useMemo(() => catalogGames(), []);
   const [extraCounts, setExtraCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
-  const [genre, setGenre] = useState<(typeof genreFilters)[number]>("Все");
 
   useEffect(() => {
     let cancelled = false;
@@ -43,8 +31,7 @@ export function CatalogHome() {
 
   const filtered = games.filter((game) => {
     const q = query.trim().toLowerCase();
-    const nameOk = !q || game.name.toLowerCase().includes(q);
-    return nameOk && matchesGenre(game.genre, genre);
+    return !q || game.name.toLowerCase().includes(q);
   });
 
   return (
@@ -59,8 +46,8 @@ export function CatalogHome() {
           </h1>
         </section>
 
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="relative block w-full max-w-md">
+        <div className="mb-6 max-w-md">
+          <label className="relative block w-full">
             <span className="sr-only">Поиск игры</span>
             <input
               value={query}
@@ -70,25 +57,6 @@ export function CatalogHome() {
               className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[var(--brand)]/50"
             />
           </label>
-          <div className="flex flex-wrap gap-2">
-            {genreFilters.map((item) => {
-              const active = genre === item;
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setGenre(item)}
-                  className={`rounded-full px-3 py-1.5 text-xs transition ${
-                    active
-                      ? "bg-[var(--brand)] text-[#1a0f0a]"
-                      : "border border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25"
-                  }`}
-                >
-                  {item}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         <div
@@ -128,7 +96,7 @@ export function CatalogHome() {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="mt-10 text-sm text-white/50">Ничего не нашлось. Сбросьте фильтр или поиск.</p>
+          <p className="mt-10 text-sm text-white/50">Ничего не нашлось. Сбросьте поиск.</p>
         ) : null}
       </main>
     </SiteChrome>

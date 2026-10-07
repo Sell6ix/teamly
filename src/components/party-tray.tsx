@@ -3,8 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { useParty } from "@/components/party-context";
 import { YOU_NAME } from "@/lib/data";
-import { Check, Copy, Link2, PartyPopper, Radio, Users } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, Link2, PartyPopper, Radio, Share2, Users } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+
+function subscribeNoop() {
+  return () => undefined;
+}
+
+function getCanShare() {
+  return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
 
 export function PartyTray() {
   const {
@@ -24,6 +32,7 @@ export function PartyTray() {
   } = useParty();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const canNativeShare = useSyncExternalStore(subscribeNoop, getCanShare, () => false);
   const full = filledCount === seats.length;
   const canConfirm = filledCount >= 2;
 
@@ -117,17 +126,32 @@ export function PartyTray() {
           </Button>
         ) : null}
 
-        <Button
-          type="button"
-          size="lg"
-          variant="outline"
-          data-testid="copy-party-link"
-          onClick={() => void copyShareLink()}
-          className="border-white/15 bg-white/5"
-        >
-          <Copy data-icon="inline-start" />
-          Скопировать ссылку на пати
-        </Button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {canNativeShare ? (
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              data-testid="share-party-link"
+              onClick={() => void copyShareLink("share")}
+              className="border-white/15 bg-white/5"
+            >
+              <Share2 data-icon="inline-start" />
+              Поделиться
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            data-testid="copy-party-link"
+            onClick={() => void copyShareLink("copy")}
+            className={`border-white/15 bg-white/5 ${canNativeShare ? "" : "sm:col-span-2"}`}
+          >
+            <Copy data-icon="inline-start" />
+            Скопировать ссылку
+          </Button>
+        </div>
         <p className="flex items-center gap-1.5 text-[11px] text-white/40">
           <Link2 className="size-3" />
           /join/{joinCode}

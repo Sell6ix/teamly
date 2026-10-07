@@ -17,16 +17,19 @@ export function defaultLobbyFilters(game: Game): LobbyFilters {
   };
 }
 
+export function isPlayStyle(value: string): value is PlayStyle {
+  return (PLAY_STYLES as readonly string[]).includes(value);
+}
+
 export function parseLobbySearchParams(
   game: Game,
   params: URLSearchParams,
+  pathStyle?: string | null,
 ): LobbyFilters {
   const defaults = defaultLobbyFilters(game);
-  const styleRaw = params.get("style");
+  const styleRaw = pathStyle && isPlayStyle(pathStyle) ? pathStyle : params.get("style");
   const playStyle =
-    styleRaw && (PLAY_STYLES as readonly string[]).includes(styleRaw)
-      ? (styleRaw as PlayStyle)
-      : defaults.playStyle;
+    styleRaw && isPlayStyle(styleRaw) ? styleRaw : defaults.playStyle;
 
   const sizeRaw = Number(params.get("size"));
   const partySize = game.partySizes.includes(sizeRaw) ? sizeRaw : defaults.partySize;
@@ -49,16 +52,30 @@ export function parseLobbySearchParams(
   return { playStyle, partySize, skill, hours };
 }
 
-export function lobbyFiltersToParams(filters: LobbyFilters, game: Game): URLSearchParams {
+/** Query params only (style lives in `/g/{game}/{style}` when using the alias). */
+export function lobbyFiltersToParams(
+  filters: LobbyFilters,
+  game: Game,
+  options?: { includeStyle?: boolean },
+): URLSearchParams {
   const defaults = defaultLobbyFilters(game);
   const params = new URLSearchParams();
-  if (filters.playStyle !== defaults.playStyle) params.set("style", filters.playStyle);
+  if (options?.includeStyle && filters.playStyle !== defaults.playStyle) {
+    params.set("style", filters.playStyle);
+  }
   if (filters.partySize !== defaults.partySize) params.set("size", String(filters.partySize));
   if (filters.skill !== defaults.skill) params.set("skill", String(filters.skill));
   const hoursKey = filters.hours.slice().sort().join(",");
   const defaultHoursKey = defaults.hours.slice().sort().join(",");
   if (hoursKey !== defaultHoursKey) params.set("hours", filters.hours.join(","));
   return params;
+}
+
+export function lobbyHref(gameId: string, filters: LobbyFilters, game: Game): string {
+  const params = lobbyFiltersToParams(filters, game, { includeStyle: false });
+  const qs = params.toString();
+  const path = `/g/${gameId}/${filters.playStyle}`;
+  return qs ? `${path}?${qs}` : path;
 }
 
 export function filtersToCriteria(gameId: Game["id"], filters: LobbyFilters): MatchCriteria {

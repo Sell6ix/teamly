@@ -11,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { catalogGames } from "@/lib/catalog";
 import {
   filtersToCriteria,
-  lobbyFiltersToParams,
+  lobbyHref,
   parseLobbySearchParams,
   type LobbyFilters,
 } from "@/lib/lobby-url";
+import { shareOrCopy } from "@/lib/share";
 import {
   formatHours,
   hourLabel,
@@ -41,7 +42,7 @@ import {
   Wifi,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,10 +60,15 @@ function criteriaKey(filters: LobbyFilters, gameId: string, feedNonce: number) {
   return JSON.stringify({ filters, gameId, feedNonce });
 }
 
-export function GameLobby({ game }: { game: Game }) {
+export function GameLobby({
+  game,
+  pathStyle = null,
+}: {
+  game: Game;
+  pathStyle?: string | null;
+}) {
   const party = useParty();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const syncedRef = useRef<string>("");
 
@@ -72,11 +78,17 @@ export function GameLobby({ game }: { game: Game }) {
   );
 
   const filters = useMemo(
-    () => parseLobbySearchParams(game, new URLSearchParams(searchParams.toString())),
-    [game, searchParams],
+    () =>
+      parseLobbySearchParams(
+        game,
+        new URLSearchParams(searchParams.toString()),
+        pathStyle,
+      ),
+    [game, searchParams, pathStyle],
   );
   const [tab, setTab] = useState("parties");
   const [extraOpen, setExtraOpen] = useState(0);
+  const [moreFilters, setMoreFilters] = useState(false);
   const [feed, setFeed] = useState<FeedState>({
     key: "",
     loading: true,
@@ -85,9 +97,7 @@ export function GameLobby({ game }: { game: Game }) {
   });
 
   function applyFilters(next: LobbyFilters) {
-    const params = lobbyFiltersToParams(next, game);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    router.replace(lobbyHref(game.id, next, game), { scroll: false });
   }
 
   const criteria = useMemo(
@@ -160,14 +170,17 @@ export function GameLobby({ game }: { game: Game }) {
   }, [criteria, key]);
 
   async function shareLobby() {
-    const params = lobbyFiltersToParams(filters, game);
-    const qs = params.toString();
-    const url = `${window.location.origin}/g/${game.id}${qs ? `?${qs}` : ""}`;
+    const url = `${window.location.origin}${lobbyHref(game.id, filters, game)}`;
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Ссылка на лобби с фильтрами скопирована");
-    } catch {
-      toast.error("Не удалось скопировать ссылку");
+      const mode = await shareOrCopy({
+        title: `Teamly · ${game.name}`,
+        text: `Кто сейчас ищет в ${game.name}`,
+        url,
+      });
+      if (mode === "copied") toast.success("Ссылка на лобби скопирована");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Не удалось поделиться ссылкой");
     }
   }
 
@@ -272,30 +285,44 @@ export function GameLobby({ game }: { game: Game }) {
                 </Chip>
               ))}
             </ChipRow>
-            <ChipRow label="Уровень">
-              {([1, 2, 3, 4, 5] as SkillLevel[]).map((level) => (
-                <Chip
-                  key={level}
-                  active={filters.skill === level}
-                  onClick={() => applyFilters({ ...filters, skill: level })}
-                  testId={`skill-${level}`}
-                >
-                  {skillLabel[level]}
-                </Chip>
-              ))}
-            </ChipRow>
-            <ChipRow label="Когда">
-              {hours.map((hour) => (
-                <Chip
-                  key={hour}
-                  active={filters.hours.includes(hour)}
-                  onClick={() => toggleHour(hour)}
-                  testId={`hour-${hour}`}
-                >
-                  {hourLabel[hour]}
-                </Chip>
-              ))}
-            </ChipRow>
+
+            <div className={moreFilters ? "space-y-3" : "hidden sm:block sm:space-y-3"}>
+              <ChipRow label="Уровень">
+                {([1, 2, 3, 4, 5] as SkillLevel[]).map((level) => (
+                  <Chip
+                    key={level}
+                    active={filters.skill === level}
+                    onClick={() => applyFilters({ ...filters, skill: level })}
+                    testId={`skill-${level}`}
+                  >
+                    {skillLabel[level]}
+                  </Chip>
+                ))}
+              </ChipRow>
+              <ChipRow label="Когда">
+                {hours.map((hour) => (
+                  <Chip
+                    key={hour}
+                    active={filters.hours.includes(hour)}
+                    onClick={() => toggleHour(hour)}
+                    testId={`hour-${hour}`}
+                  >
+                    {hourLabel[hour]}
+                  </Chip>
+                ))}
+              </ChipRow>
+            </div>
+
+            <button
+              type="button"
+              data-testid="more-filters"
+              onClick={() => setMoreFilters((value) => !value)}
+              className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline sm:hidden"
+            >
+              {moreFilters
+                ? "Скрыть фильтры"
+                : `Ещё фильтры · ${skillLabel[filters.skill]} · ${filters.hours.map((h) => hourLabel[h]).join(", ")}`}
+            </button>
           </div>
 
           {loading ? <LoadingState /> : null}
@@ -532,10 +559,15 @@ function PartyCard({
   async function copyPartyLink() {
     const url = `${window.location.origin}/party/${party.id}`;
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Ссылка на сбор скопирована");
-    } catch {
-      toast.error("Не удалось скопировать");
+      const mode = await shareOrCopy({
+        title: `Teamly · ${party.name}`,
+        text: party.note,
+        url,
+      });
+      if (mode === "copied") toast.success("Ссылка на сбор скопирована");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Не удалось поделиться");
     }
   }
 
