@@ -11,6 +11,7 @@ import {
   VOICE_PLATFORMS,
   type UserProfile,
 } from "@/lib/profile";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,19 +27,56 @@ export function ProfilePanel({
   onClose: () => void;
   onSaved?: (profile: UserProfile) => void;
 }) {
+  const { status } = useSession();
   const [draft, setDraft] = useState<UserProfile>(defaultProfile);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setDraft(loadProfile());
-  }, [open]);
+    if (!open) return;
+    if (status === "authenticated") {
+      void fetch("/api/me")
+        .then((res) => res.json())
+        .then((data: { profile?: UserProfile }) => {
+          if (data.profile) {
+            setDraft(data.profile);
+            saveProfile(data.profile);
+          } else setDraft(loadProfile());
+        })
+        .catch(() => setDraft(loadProfile()));
+      return;
+    }
+    setDraft(loadProfile());
+  }, [open, status]);
 
   if (!open) return null;
 
-  function save() {
-    saveProfile(draft);
-    onSaved?.(draft);
-    toast.success("Профиль сохранён");
-    onClose();
+  async function save() {
+    setSaving(true);
+    try {
+      saveProfile(draft);
+      if (status === "authenticated") {
+        const response = await fetch("/api/me", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draft),
+        });
+        if (!response.ok) {
+          toast.error("Не удалось сохранить в БД");
+          return;
+        }
+        const data = (await response.json()) as { profile?: UserProfile };
+        if (data.profile) {
+          saveProfile(data.profile);
+          onSaved?.(data.profile);
+        } else onSaved?.(draft);
+      } else {
+        onSaved?.(draft);
+      }
+      toast.success("Профиль сохранён");
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -59,7 +97,9 @@ export function ProfilePanel({
           Мой профиль
         </h2>
         <p className="mt-1 text-xs text-white/45">
-          Локальный аккаунт в браузере (без пароля). Ссылки увидят в пати и при публикации.
+          {status === "authenticated"
+            ? "Сохраняется в SQLite на сервере."
+            : "Локально в браузере. Войдите — профиль уедет в БД."}
         </p>
         {draft.accountId ? (
           <p className="mt-2 font-mono text-[11px] text-white/35" data-testid="profile-account-id">
@@ -67,7 +107,7 @@ export function ProfilePanel({
           </p>
         ) : null}
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
           <label className="block text-xs text-white/45">
             Имя
             <input
@@ -109,7 +149,7 @@ export function ProfilePanel({
               data-testid="profile-discord-webhook"
             />
             <span className="mt-1 block text-[11px] text-white/35">
-              При подтверждении пати бриф уйдёт в канал. Это демо-замена бота.
+              Либо webhook здесь, либо бот через DISCORD_BOT_TOKEN + канал в env.
             </span>
           </label>
           <label className="block text-xs text-white/45">
@@ -174,7 +214,13 @@ export function ProfilePanel({
         </div>
 
         <div className="mt-5 flex gap-2">
-          <Button type="button" className="flex-1" data-testid="profile-save" onClick={save}>
+          <Button
+            type="button"
+            className="flex-1"
+            data-testid="profile-save"
+            disabled={saving}
+            onClick={() => void save()}
+          >
             Сохранить
           </Button>
           <Button type="button" variant="outline" onClick={onClose}>

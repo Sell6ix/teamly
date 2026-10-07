@@ -1,8 +1,10 @@
 "use client";
 
 import { ProfilePanel } from "@/components/profile-panel";
-import { defaultProfile, loadProfile, regionLabel, type UserProfile } from "@/lib/profile";
+import { mergeServerBlacklist, type BlacklistEntry } from "@/lib/blacklist";
+import { defaultProfile, loadProfile, regionLabel, saveProfile, type UserProfile } from "@/lib/profile";
 import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 export function SiteChrome({
@@ -12,12 +14,31 @@ export function SiteChrome({
   children: React.ReactNode;
   subtle?: boolean;
 }) {
+  const { data: session, status } = useSession();
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setProfile(loadProfile());
   }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    void fetch("/api/me")
+      .then((res) => res.json())
+      .then(
+        (data: { profile?: UserProfile; blacklist?: BlacklistEntry[] }) => {
+          if (data.profile) {
+            saveProfile(data.profile);
+            setProfile(data.profile);
+          }
+          if (data.blacklist) mergeServerBlacklist(data.blacklist);
+        },
+      )
+      .catch(() => undefined);
+  }, [status]);
+
+  const label = session?.user?.name || profile.displayName || "Профиль";
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
@@ -47,14 +68,34 @@ export function SiteChrome({
             >
               Люди
             </Link>
-            <button
-              type="button"
-              data-testid="open-profile"
-              onClick={() => setOpen(true)}
-              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80 transition hover:border-[var(--brand)]/40 hover:text-white"
-            >
-              {profile.displayName || "Профиль"}
-            </button>
+            {status === "authenticated" ? (
+              <>
+                <button
+                  type="button"
+                  data-testid="open-profile"
+                  onClick={() => setOpen(true)}
+                  className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80 transition hover:border-[var(--brand)]/40 hover:text-white"
+                >
+                  {label}
+                </button>
+                <button
+                  type="button"
+                  data-testid="sign-out"
+                  onClick={() => void signOut({ callbackUrl: "/" })}
+                  className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/70 transition hover:text-white"
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                data-testid="nav-login"
+                className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand)]/15 px-2 py-1 text-[var(--brand)] transition hover:bg-[var(--brand)]/25"
+              >
+                Войти
+              </Link>
+            )}
             <span className="hidden rounded-md border border-white/10 bg-white/5 px-2 py-1 sm:inline">
               {regionLabel[profile.region]}
             </span>

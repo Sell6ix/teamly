@@ -6,6 +6,7 @@ import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { loadProfile } from "@/lib/profile";
 import { personIdOf, rememberInvite } from "@/lib/recent";
 import { shareOrCopy } from "@/lib/share";
+import { getSession } from "next-auth/react";
 import type {
   GameId,
   HourWindow,
@@ -516,6 +517,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       const profile = loadProfile();
+      const session = await getSession();
       try {
         const response = await fetch("/api/looking", {
           method: "POST",
@@ -526,8 +528,8 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             partySize: current.seats.length,
             skill: current.lobbyMeta.skill,
             hours: current.lobbyMeta.hours,
-            accountId: profile.accountId || "you",
-            name: profile.displayName || YOU_NAME,
+            accountId: session?.user?.id || profile.accountId || "you",
+            name: profile.displayName || session?.user?.name || YOU_NAME,
             role: options?.role || "Ищу пати",
             bio: options?.bio || "Ищу пати по фильтрам лобби. Можно писать в Discord.",
             region: profile.region,
@@ -587,28 +589,30 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         url,
       });
       await navigator.clipboard.writeText(text).catch(() => undefined);
-      if (profile.discordWebhookUrl.trim()) {
-        try {
-          const notify = await fetch("/api/discord-notify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              webhookUrl: profile.discordWebhookUrl.trim(),
-              content: text,
-            }),
-          });
-          if (notify.ok) toast.success("Бриф отправлен в Discord");
-          else {
-            const data = (await notify.json()) as { error?: string };
-            toast.error(data.error ?? "Discord webhook не принял бриф");
-          }
-        } catch {
-          toast.error("Не удалось отправить в Discord");
+      try {
+        const notify = await fetch("/api/discord-notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            webhookUrl: profile.discordWebhookUrl.trim() || undefined,
+            content: text,
+          }),
+        });
+        if (notify.ok) {
+          const data = (await notify.json()) as { via?: string };
+          toast.success(
+            data.via === "bot"
+              ? "Бриф ушёл в Discord через бота"
+              : "Бриф отправлен в Discord",
+          );
+        } else if (mode === "copied") {
+          toast.success("Бриф скопирован (Discord env не настроен)");
+        } else {
+          toast.success("Бриф скопирован");
         }
-      } else if (mode === "copied") {
-        toast.success("Бриф пати скопирован — кидайте в чат");
-      } else {
-        toast.success("Можно звать в клиент. Бриф скопирован.");
+      } catch {
+        if (mode === "copied") toast.success("Бриф пати скопирован — кидайте в чат");
+        else toast.success("Можно звать в клиент. Бриф скопирован.");
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;

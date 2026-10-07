@@ -44,6 +44,22 @@ export function isBlocked(
   return entries.some((item) => item.personId === personId);
 }
 
+function syncBlock(personId: string, name: string) {
+  if (typeof window === "undefined") return;
+  void fetch("/api/me/blacklist", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ personId, name }),
+  }).catch(() => undefined);
+}
+
+function syncUnblock(personId: string) {
+  if (typeof window === "undefined") return;
+  void fetch(`/api/me/blacklist?personId=${encodeURIComponent(personId)}`, {
+    method: "DELETE",
+  }).catch(() => undefined);
+}
+
 export function blockPerson(
   personId: string,
   name: string,
@@ -54,6 +70,7 @@ export function blockPerson(
     ...entries.filter((item) => item.personId !== personId),
   ];
   saveBlacklist(next);
+  syncBlock(personId, name);
   return next;
 }
 
@@ -63,5 +80,16 @@ export function unblockPerson(
 ): BlacklistEntry[] {
   const next = entries.filter((item) => item.personId !== personId);
   saveBlacklist(next);
+  syncUnblock(personId);
   return next;
+}
+
+/** Merge server blacklist into local storage after login. */
+export function mergeServerBlacklist(server: BlacklistEntry[]) {
+  const local = loadBlacklist();
+  const map = new Map<string, BlacklistEntry>();
+  for (const item of [...local, ...server]) map.set(item.personId, item);
+  const merged = [...map.values()].sort((a, b) => b.at - a.at);
+  saveBlacklist(merged);
+  return merged;
 }

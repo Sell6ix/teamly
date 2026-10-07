@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { gameById } from "@/lib/matching";
 import { listLooking, upsertLooking } from "@/lib/party-store";
 import { REGIONS, VOICE_PLATFORMS } from "@/lib/profile";
@@ -55,10 +56,12 @@ export async function POST(request: Request) {
     typeof payload.bio === "string" && payload.bio.trim()
       ? payload.bio.trim()
       : "Ищу пати по текущим фильтрам лобби.";
+  const session = await auth();
   const accountId =
-    typeof payload.accountId === "string" && payload.accountId.trim()
+    session?.user?.id ||
+    (typeof payload.accountId === "string" && payload.accountId.trim()
       ? payload.accountId.trim()
-      : "you";
+      : "you");
 
   const player: Player = {
     id: `you-${accountId}-${gameId}`,

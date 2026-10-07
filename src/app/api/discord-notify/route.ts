@@ -1,6 +1,8 @@
+import { auth } from "@/auth";
+import { postDiscordMessage, postDiscordWebhook } from "@/lib/discord";
 import { NextResponse } from "next/server";
 
-/** Posts a party brief to a Discord incoming webhook (demo stand-in for a bot). */
+/** Posts a party brief via user webhook and/or bot channel. */
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -10,33 +12,33 @@ export async function POST(request: Request) {
   }
 
   const payload = body as Record<string, unknown>;
-  const webhookUrl = typeof payload.webhookUrl === "string" ? payload.webhookUrl.trim() : "";
   const content = typeof payload.content === "string" ? payload.content.trim() : "";
+  if (!content) {
+    return NextResponse.json({ error: "Пустой бриф." }, { status: 400 });
+  }
 
-  if (!webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+  const webhookUrl =
+    typeof payload.webhookUrl === "string" ? payload.webhookUrl.trim() : "";
+
+  if (webhookUrl) {
+    const viaHook = await postDiscordWebhook(webhookUrl, content);
+    if (!viaHook.ok) {
+      return NextResponse.json({ error: viaHook.error }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true, via: "webhook" });
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) {
     return NextResponse.json(
-      { error: "Нужен Discord Incoming Webhook (discord.com/api/webhooks/…)." },
-      { status: 400 },
+      { error: "Войдите или укажите webhook в профиле." },
+      { status: 401 },
     );
   }
-  if (!content || content.length > 1900) {
-    return NextResponse.json({ error: "Текст брифa пустой или слишком длинный." }, { status: 400 });
-  }
 
-  try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Discord webhook отклонил сообщение. Проверьте ссылку." },
-        { status: 502 },
-      );
-    }
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Не удалось достучаться до Discord." }, { status: 502 });
+  const viaBot = await postDiscordMessage(content);
+  if (!viaBot.ok) {
+    return NextResponse.json({ error: viaBot.error }, { status: 502 });
   }
+  return NextResponse.json({ ok: true, via: viaBot.via });
 }

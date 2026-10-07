@@ -1,3 +1,6 @@
+import { eq } from "drizzle-orm";
+import { db, ensureDb } from "@/db";
+import { joinSessions, lookingPosts } from "@/db/schema";
 import { YOU_NAME } from "@/lib/data";
 import type {
   GameId,
@@ -9,6 +12,8 @@ import type {
   SkillLevel,
   VoicePlatform,
 } from "./types";
+
+ensureDb();
 
 export type StoredSeat = {
   name: string;
@@ -34,35 +39,37 @@ export type JoinSession = {
   startsAt?: string | null;
   region?: Region;
   voicePlatform?: VoicePlatform;
+  ownerUserId?: string | null;
   updatedAt: number;
 };
 
-type Store = {
-  joins: Map<string, JoinSession>;
-  published: Map<string, OpenParty>;
-  looking: Map<string, Player>;
-};
-
-const globalForStore = globalThis as typeof globalThis & {
-  __teamlyPartyStore?: Store;
-};
-
-function store(): Store {
-  if (!globalForStore.__teamlyPartyStore) {
-    globalForStore.__teamlyPartyStore = {
-      joins: new Map(),
-      published: new Map(),
-      looking: new Map(),
-    };
-    seedDemo(globalForStore.__teamlyPartyStore);
-  }
-  if (!globalForStore.__teamlyPartyStore.looking) {
-    globalForStore.__teamlyPartyStore.looking = new Map();
-  }
-  return globalForStore.__teamlyPartyStore;
+function rowToSession(row: typeof joinSessions.$inferSelect): JoinSession {
+  return {
+    code: row.code,
+    partyName: row.partyName,
+    gameId: row.gameId as GameId,
+    partySize: row.partySize,
+    playStyle: row.playStyle as PlayStyle,
+    skill: row.skill as SkillLevel,
+    hours: JSON.parse(row.hoursJson) as HourWindow[],
+    seats: JSON.parse(row.seatsJson) as StoredSeat[],
+    filled: row.filled,
+    published: Boolean(row.published),
+    note: row.note,
+    micRequired: Boolean(row.micRequired),
+    leader: row.leader,
+    ready: Boolean(row.ready),
+    startsAt: row.startsAt,
+    region: (row.region as Region | null) ?? undefined,
+    voicePlatform: (row.voicePlatform as VoicePlatform | null) ?? undefined,
+    ownerUserId: row.ownerUserId,
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt.getTime() : Number(row.updatedAt),
+  };
 }
 
-function seedDemo(target: Store) {
+function seedDemo() {
+  const existing = db.select().from(joinSessions).where(eq(joinSessions.code, "DEMO1")).get();
+  if (existing) return;
   const demo: JoinSession = {
     code: "DEMO1",
     partyName: "Демо-пати Ивана",
@@ -89,9 +96,10 @@ function seedDemo(target: Store) {
     voicePlatform: "discord",
     updatedAt: Date.now(),
   };
-  target.joins.set(demo.code, demo);
-  target.published.set(demo.code.toLowerCase(), sessionToOpenParty(demo));
+  upsertJoinSession(demo);
 }
+
+seedDemo();
 
 export function normalizeCode(code: string) {
   return code.trim().toUpperCase();
@@ -129,19 +137,44 @@ export function upsertJoinSession(
     code,
     updatedAt: Date.now(),
   };
-  store().joins.set(code, next);
-  if (next.published) {
-    const party = sessionToOpenParty(next);
-    if (party.filled >= party.partySize) {
-      party.filled = Math.max(1, party.partySize - 1);
-    }
-    store().published.set(party.id, party);
-  }
+  const values = {
+    code,
+    partyName: next.partyName,
+    gameId: next.gameId,
+    partySize: next.partySize,
+    playStyle: next.playStyle,
+    skill: next.skill,
+    hoursJson: JSON.stringify(next.hours),
+    seatsJson: JSON.stringify(next.seats),
+    filled: next.filled,
+    published: next.published,
+    note: next.note,
+    micRequired: next.micRequired,
+    leader: next.leader,
+    ready: next.ready,
+    startsAt: next.startsAt ?? null,
+    region: next.region ?? null,
+    voicePlatform: next.voicePlatform ?? null,
+    ownerUserId: next.ownerUserId ?? null,
+    updatedAt: new Date(next.updatedAt),
+  };
+  db.insert(joinSessions)
+    .values(values)
+    .onConflictDoUpdate({
+      target: joinSessions.code,
+      set: values,
+    })
+    .run();
   return next;
 }
 
 export function getJoinSession(code: string): JoinSession | undefined {
-  return store().joins.get(normalizeCode(code));
+  const row = db
+    .select()
+    .from(joinSessions)
+    .where(eq(joinSessions.code, normalizeCode(code)))
+    .get();
+  return row ? rowToSession(row) : undefined;
 }
 
 export function publishSession(
@@ -155,47 +188,58 @@ export function publishSession(
 ): OpenParty | null {
   const session = getJoinSession(code);
   if (!session) return null;
-  const next = {
+  const next = upsertJoinSession({
     ...session,
     published: true,
     note: note?.trim() || session.note || `Ищем ещё в ${session.partyName}`,
     startsAt: extras?.startsAt ?? session.startsAt ?? null,
     region: extras?.region ?? session.region,
     voicePlatform: extras?.voicePlatform ?? session.voicePlatform,
-    updatedAt: Date.now(),
-  };
-  store().joins.set(next.code, next);
+  });
   const party = sessionToOpenParty(next);
   if (party.filled >= party.partySize) {
     party.filled = Math.max(1, party.partySize - 1);
   }
-  store().published.set(party.id, party);
   return party;
 }
 
 export function unpublishSession(code: string) {
   const session = getJoinSession(code);
   if (!session) return;
-  const next = { ...session, published: false, updatedAt: Date.now() };
-  store().joins.set(next.code, next);
-  store().published.delete(next.code.toLowerCase());
+  upsertJoinSession({ ...session, published: false });
 }
 
 export function listPublishedParties(gameId?: GameId): OpenParty[] {
-  const all = [...store().published.values()];
-  return gameId ? all.filter((party) => party.gameId === gameId) : all;
+  const rows = db.select().from(joinSessions).all().map(rowToSession);
+  return rows
+    .filter((session) => session.published)
+    .filter((session) => !gameId || session.gameId === gameId)
+    .map((session) => {
+      const party = sessionToOpenParty(session);
+      if (party.filled >= party.partySize) {
+        party.filled = Math.max(1, party.partySize - 1);
+      }
+      return party;
+    });
 }
 
 export function getPublishedParty(id: string): OpenParty | undefined {
-  return (
-    store().published.get(id.toLowerCase()) ??
-    store().published.get(normalizeCode(id).toLowerCase())
-  );
+  const code = normalizeCode(id);
+  const session =
+    getJoinSession(code) ??
+    db
+      .select()
+      .from(joinSessions)
+      .all()
+      .map(rowToSession)
+      .find((row) => row.code.toLowerCase() === id.toLowerCase());
+  if (!session?.published) return undefined;
+  return sessionToOpenParty(session);
 }
 
 export function publishedCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const party of store().published.values()) {
+  for (const party of listPublishedParties()) {
     if (party.filled >= party.partySize) continue;
     counts[party.gameId] = (counts[party.gameId] ?? 0) + 1;
   }
@@ -203,18 +247,35 @@ export function publishedCounts(): Record<string, number> {
 }
 
 export function upsertLooking(player: Player): Player {
-  store().looking.set(player.id, player);
+  const values = {
+    id: player.id,
+    personId: player.personId ?? player.id,
+    userId: player.personId?.startsWith("acc-") ? null : player.personId ?? null,
+    name: player.name,
+    gameId: player.gameId,
+    payloadJson: JSON.stringify(player),
+    updatedAt: new Date(),
+  };
+  db.insert(lookingPosts)
+    .values(values)
+    .onConflictDoUpdate({
+      target: lookingPosts.id,
+      set: values,
+    })
+    .run();
   return player;
 }
 
 export function listLooking(gameId?: GameId): Player[] {
-  const all = [...store().looking.values()];
-  return gameId ? all.filter((player) => player.gameId === gameId) : all;
+  const rows = db.select().from(lookingPosts).all();
+  return rows
+    .map((row) => JSON.parse(row.payloadJson) as Player)
+    .filter((player) => !gameId || player.gameId === gameId);
 }
 
 export function lookingCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const player of store().looking.values()) {
+  for (const player of listLooking()) {
     counts[player.gameId] = (counts[player.gameId] ?? 0) + 1;
   }
   return counts;
