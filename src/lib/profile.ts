@@ -6,6 +6,8 @@ export const REGIONS: Region[] = ["msk", "eu", "kz", "other"];
 export const VOICE_PLATFORMS: VoicePlatform[] = ["discord", "ingame", "any"];
 
 export type UserProfile = {
+  /** Stable local demo account id (not a real login). */
+  accountId: string;
   displayName: string;
   steamProfileUrl: string;
   discordUrl: string;
@@ -13,6 +15,8 @@ export type UserProfile = {
   faceitUrl: string;
   region: Region;
   voicePlatform: VoicePlatform;
+  /** Optional Discord incoming webhook — confirm posts the party brief there. */
+  discordWebhookUrl: string;
 };
 
 export const regionLabel: Record<Region, string> = {
@@ -32,6 +36,7 @@ export const PROFILE_STORAGE_KEY = "teamly-profile-v1";
 
 export function defaultProfile(): UserProfile {
   return {
+    accountId: "",
     displayName: "Иван",
     steamProfileUrl: "",
     discordUrl: "",
@@ -39,6 +44,7 @@ export function defaultProfile(): UserProfile {
     faceitUrl: "",
     region: "msk",
     voicePlatform: "discord",
+    discordWebhookUrl: "",
   };
 }
 
@@ -48,7 +54,16 @@ export function loadProfile(): UserProfile {
     const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
     if (!raw) return defaultProfile();
     const parsed = JSON.parse(raw) as Partial<UserProfile>;
-    return { ...defaultProfile(), ...parsed };
+    const merged = { ...defaultProfile(), ...parsed };
+    if (!merged.accountId) {
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? `acc-${crypto.randomUUID().slice(0, 8)}`
+          : `acc-${Math.random().toString(36).slice(2, 10)}`;
+      merged.accountId = id;
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return defaultProfile();
   }

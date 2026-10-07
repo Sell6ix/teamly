@@ -89,6 +89,9 @@ export async function POST(request: Request) {
   const recentPersonIds = Array.isArray(payload.recentPersonIds)
     ? payload.recentPersonIds.filter((item): item is string => typeof item === "string")
     : [];
+  const blockedPersonIds = Array.isArray(payload.blockedPersonIds)
+    ? payload.blockedPersonIds.filter((item): item is string => typeof item === "string")
+    : [];
 
   const criteria: MatchCriteria = {
     gameId: typedGameId,
@@ -100,6 +103,7 @@ export async function POST(request: Request) {
     region,
     voicePlatform,
     recentPersonIds,
+    blockedPersonIds,
   };
 
   const published = listPublishedParties(typedGameId);

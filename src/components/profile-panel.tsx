@@ -59,8 +59,13 @@ export function ProfilePanel({
           Мой профиль
         </h2>
         <p className="mt-1 text-xs text-white/45">
-          Демо: сохраняется в этом браузере. Ссылки увидят в пати и при публикации.
+          Локальный аккаунт в браузере (без пароля). Ссылки увидят в пати и при публикации.
         </p>
+        {draft.accountId ? (
+          <p className="mt-2 font-mono text-[11px] text-white/35" data-testid="profile-account-id">
+            id · {draft.accountId}
+          </p>
+        ) : null}
 
         <div className="mt-4 space-y-3">
           <label className="block text-xs text-white/45">
@@ -91,6 +96,21 @@ export function ProfilePanel({
               className={fieldClass}
               data-testid="profile-discord"
             />
+          </label>
+          <label className="block text-xs text-white/45">
+            Discord webhook (опционально)
+            <input
+              value={draft.discordWebhookUrl}
+              onChange={(e) =>
+                setDraft({ ...draft, discordWebhookUrl: e.target.value })
+              }
+              placeholder="https://discord.com/api/webhooks/…"
+              className={fieldClass}
+              data-testid="profile-discord-webhook"
+            />
+            <span className="mt-1 block text-[11px] text-white/35">
+              При подтверждении пати бриф уйдёт в канал. Это демо-замена бота.
+            </span>
           </label>
           <label className="block text-xs text-white/45">
             Riot ID

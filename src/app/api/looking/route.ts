@@ -55,10 +55,14 @@ export async function POST(request: Request) {
     typeof payload.bio === "string" && payload.bio.trim()
       ? payload.bio.trim()
       : "Ищу пати по текущим фильтрам лобби.";
+  const accountId =
+    typeof payload.accountId === "string" && payload.accountId.trim()
+      ? payload.accountId.trim()
+      : "you";
 
   const player: Player = {
-    id: `you-${gameId}`,
-    personId: "you",
+    id: `you-${accountId}-${gameId}`,
+    personId: accountId,
     name,
     gameId: gameId as GameId,
     playStyles: [payload.playStyle],

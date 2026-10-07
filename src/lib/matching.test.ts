@@ -93,6 +93,26 @@ describe("scorePlayer", () => {
     );
     expect(result.players.some((row) => row.player.id === "you-valorant")).toBe(true);
   });
+
+  it("hides blacklisted people from the feed", () => {
+    const open = matchPeople({
+      gameId: "cs2",
+      playStyle: "casual",
+      partySize: 2,
+      skill: 2,
+      hours: ["evening"],
+    });
+    expect(open.players.some((row) => row.player.personId === "vanya")).toBe(true);
+    const blocked = matchPeople({
+      gameId: "cs2",
+      playStyle: "casual",
+      partySize: 2,
+      skill: 2,
+      hours: ["evening"],
+      blockedPersonIds: ["vanya"],
+    });
+    expect(blocked.players.some((row) => row.player.personId === "vanya")).toBe(false);
+  });
 });
 
 describe("cross-game person", () => {

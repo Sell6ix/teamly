@@ -1,9 +1,10 @@
 "use client";
 
+import { isBlocked } from "@/lib/blacklist";
 import { YOU_NAME } from "@/lib/data";
 import type { JoinSession, StoredSeat } from "@/lib/party-store";
 import { loadProfile } from "@/lib/profile";
-import { rememberInvite } from "@/lib/recent";
+import { personIdOf, rememberInvite } from "@/lib/recent";
 import { shareOrCopy } from "@/lib/share";
 import type {
   GameId,
@@ -304,6 +305,10 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         toast.error("Вы уже в чужом сборе. Выйдите, чтобы собрать свою пати.");
         return;
       }
+      if (isBlocked(personIdOf(player))) {
+        toast.error("Этот человек в чёрном списке.");
+        return;
+      }
       if (current.seats.some((seat) => seat.kind === "player" && seat.player.id === player.id)) {
         return;
       }
@@ -521,6 +526,7 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
             partySize: current.seats.length,
             skill: current.lobbyMeta.skill,
             hours: current.lobbyMeta.hours,
+            accountId: profile.accountId || "you",
             name: profile.displayName || YOU_NAME,
             role: options?.role || "Ищу пати",
             bio: options?.bio || "Ищу пати по фильтрам лобби. Можно писать в Discord.",
@@ -581,8 +587,29 @@ export function PartyProvider({ children }: { children: React.ReactNode }) {
         url,
       });
       await navigator.clipboard.writeText(text).catch(() => undefined);
-      if (mode === "copied") toast.success("Бриф пати скопирован — кидайте в чат");
-      else toast.success("Можно звать в клиент. Бриф скопирован.");
+      if (profile.discordWebhookUrl.trim()) {
+        try {
+          const notify = await fetch("/api/discord-notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              webhookUrl: profile.discordWebhookUrl.trim(),
+              content: text,
+            }),
+          });
+          if (notify.ok) toast.success("Бриф отправлен в Discord");
+          else {
+            const data = (await notify.json()) as { error?: string };
+            toast.error(data.error ?? "Discord webhook не принял бриф");
+          }
+        } catch {
+          toast.error("Не удалось отправить в Discord");
+        }
+      } else if (mode === "copied") {
+        toast.success("Бриф пати скопирован — кидайте в чат");
+      } else {
+        toast.success("Можно звать в клиент. Бриф скопирован.");
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       toast.error("Не удалось скопировать бриф");

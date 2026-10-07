@@ -35,8 +35,10 @@ import {
   voiceLabel,
   VOICE_PLATFORMS,
 } from "@/lib/profile";
-import { otherGamesFor, recentForGame, recentPersonIds } from "@/lib/recent";
+import { loadAccount } from "@/lib/account";
+import { blockPerson, blockedPersonIds } from "@/lib/blacklist";
 import { games } from "@/lib/data";
+import { otherGamesFor, personIdOf, recentForGame, recentPersonIds } from "@/lib/recent";
 import type {
   Game,
   HourWindow,
@@ -121,6 +123,7 @@ export function GameLobby({
     () => ({
       ...filtersToCriteria(game.id, filters),
       recentPersonIds: recentPersonIds(),
+      blockedPersonIds: blockedPersonIds(),
     }),
     [game.id, filters, party.feedNonce],
   );
@@ -519,6 +522,7 @@ export function GameLobby({
                         invited={party.invitedIds.has(row.player.id)}
                         disabled={party.partyFull || Boolean(party.joinedParty)}
                         onInvite={() => party.invite(row.player)}
+                        onBlocked={() => party.bumpFeed()}
                       />
                     ))
                   )}
@@ -621,21 +625,31 @@ function PlayerCard({
   invited,
   disabled,
   onInvite,
+  onBlocked,
 }: {
   row: MatchResult["players"][number];
   invited: boolean;
   disabled: boolean;
   onInvite: () => void;
+  onBlocked?: () => void;
 }) {
-  const isYou = row.player.id.startsWith("you-");
+  const account = loadAccount();
   const { player, reasons } = row;
+  const pid = personIdOf(player);
+  const isYou = player.id.startsWith("you-") || pid === account.accountId;
   const proof = reasons.slice(0, 2);
   return (
     <article className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition hover:border-white/16">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="flex flex-wrap items-center gap-2 text-base font-medium text-white">
-            {player.name}
+            <Link
+              href={`/people/${pid}`}
+              className="hover:text-[var(--brand)]"
+              data-testid="player-person-link"
+            >
+              {player.name}
+            </Link>
             {player.online ? (
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-200">
                 <Wifi className="size-3" />
@@ -670,16 +684,30 @@ function PlayerCard({
             это вы
           </span>
         ) : (
-          <Button
-            type="button"
-            size="lg"
-            data-testid="invite-button"
-            disabled={disabled || invited}
-            onClick={onInvite}
-          >
-            <UserPlus data-icon="inline-start" />
-            {invited ? "В пати" : "Пригласить"}
-          </Button>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button
+              type="button"
+              size="lg"
+              data-testid="invite-button"
+              disabled={disabled || invited}
+              onClick={onInvite}
+            >
+              <UserPlus data-icon="inline-start" />
+              {invited ? "В пати" : "Пригласить"}
+            </Button>
+            <button
+              type="button"
+              data-testid="block-player"
+              className="text-[11px] text-white/35 transition hover:text-white/70"
+              onClick={() => {
+                blockPerson(pid, player.name);
+                toast.success(`${player.name} скрыт из ленты`);
+                onBlocked?.();
+              }}
+            >
+              Скрыть
+            </button>
+          </div>
         )}
       </div>
       <p className="mt-3 text-sm text-white/60">{proof[0]}</p>

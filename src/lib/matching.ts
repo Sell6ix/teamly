@@ -210,11 +210,13 @@ export function matchPeople(
 ): MatchResult {
   const roleTag = criteria.roleTag ?? null;
   const recent = new Set(criteria.recentPersonIds ?? []);
+  const blocked = new Set(criteria.blockedPersonIds ?? []);
   const seenPlayers = new Set<string>();
   const playerMatches = [...extraPlayers, ...players]
     .filter((player) => {
       if (seenPlayers.has(player.id)) return false;
       seenPlayers.add(player.id);
+      if (blocked.has(personIdOf(player))) return false;
       return true;
     })
     .map((player) => scorePlayer(player, criteria))

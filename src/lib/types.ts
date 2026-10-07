@@ -114,6 +114,8 @@ export type MatchCriteria = {
   voicePlatform?: VoicePlatform | null;
   /** personId from local «недавно играли» */
   recentPersonIds?: string[];
+  /** personIds hidden via local blacklist */
+  blockedPersonIds?: string[];
 };
 
 export type PlayerMatch = {

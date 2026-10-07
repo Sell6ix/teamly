@@ -40,6 +40,13 @@ export function SiteChrome({
             <span className="hidden text-xs text-white/45 sm:inline">Собери пати за минуту</span>
           </Link>
           <div className="flex items-center gap-2 text-xs text-white/55">
+            <Link
+              href="/people"
+              data-testid="nav-people"
+              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80 transition hover:border-white/25 hover:text-white"
+            >
+              Люди
+            </Link>
             <button
               type="button"
               data-testid="open-profile"
@@ -48,7 +55,7 @@ export function SiteChrome({
             >
               {profile.displayName || "Профиль"}
             </button>
-            <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
+            <span className="hidden rounded-md border border-white/10 bg-white/5 px-2 py-1 sm:inline">
               {regionLabel[profile.region]}
             </span>
           </div>
