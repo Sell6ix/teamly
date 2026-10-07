@@ -29,7 +29,7 @@ export function PersonPage({ personId }: { personId: string }) {
     return (
       <SiteChrome subtle>
         <main className="mx-auto max-w-lg flex-1 px-4 py-16 text-center">
-          <h1 className="font-display text-3xl text-white">{t("people.notFound")}</h1>
+          <h1 className="font-display text-3xl text-foreground">{t("people.notFound")}</h1>
           <Link href="/people" className="mt-4 inline-block text-sm text-[var(--brand)]">
             {t("people.backToPeople")}
           </Link>
@@ -53,14 +53,14 @@ export function PersonPage({ personId }: { personId: string }) {
   return (
     <SiteChrome subtle>
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-16 pt-10 sm:px-6">
-        <Link href="/people" className="text-sm text-white/50 hover:text-white">
+        <Link href="/people" className="text-sm text-muted-foreground hover:text-foreground">
           {t("people.back")}
         </Link>
         <header className="mt-4 animate-fade-up">
-          <h1 className="font-display text-4xl text-white">{person.name}</h1>
-          <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/55">
+          <h1 className="font-display text-4xl text-foreground">{person.name}</h1>
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {person.online ? (
-              <span className="text-emerald-300">{t("people.online")}</span>
+              <span className="text-emerald-600 dark:text-emerald-300">{t("people.online")}</span>
             ) : (
               <span>{t("people.offline")}</span>
             )}
@@ -88,24 +88,26 @@ export function PersonPage({ personId }: { personId: string }) {
         </header>
 
         <section className="mt-10">
-          <h2 className="text-xs uppercase tracking-wide text-white/40">{t("people.games")}</h2>
+          <h2 className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("people.games")}
+          </h2>
           <ul className="mt-3 space-y-3">
             {rows.map((player) => (
               <li
                 key={player.id}
-                className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
+                className="rounded-2xl border border-border bg-card/70 p-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-white">{gameName(player.gameId)}</p>
-                    <p className="mt-1 text-sm text-white/50">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">{gameName(player.gameId)}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {player.role} · {t("people.lookingFor", { n: player.lookingForSize })}
                     </p>
-                    <p className="mt-2 text-sm text-white/60">{player.bio}</p>
+                    <p className="mt-2 text-sm text-foreground/80">{player.bio}</p>
                   </div>
                   <Link
                     href={`/g/${player.gameId}`}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition hover:border-[var(--brand)]/40"
+                    className="shrink-0 rounded-lg border border-border bg-secondary/50 px-3 py-1.5 text-sm text-foreground/80 transition hover:border-[var(--brand)]/40"
                   >
                     {t("people.toLobby")}
                   </Link>

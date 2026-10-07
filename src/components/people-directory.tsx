@@ -58,9 +58,13 @@ export function PeopleDirectory({
     <SiteChrome>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-10 sm:px-6">
         <section className="mb-8 animate-fade-up">
-          <p className="text-xs uppercase tracking-wide text-white/40">{t("people.eyebrow")}</p>
-          <h1 className="mt-2 font-display text-4xl text-white sm:text-5xl">{t("people.title")}</h1>
-          <p className="mt-3 max-w-xl text-sm text-white/60 sm:text-base">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("people.eyebrow")}
+          </p>
+          <h1 className="mt-2 font-display text-4xl text-foreground sm:text-5xl">
+            {t("people.title")}
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
             {t("people.lead")}
           </p>
         </section>
@@ -71,13 +75,13 @@ export function PeopleDirectory({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("people.search")}
             data-testid="people-search"
-            className="w-full flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-[var(--brand)]/50"
+            className="w-full flex-1 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-[var(--brand)]/50"
           />
           <select
             value={gameId}
             onChange={(event) => setGameId(event.target.value as GameId | "all")}
             data-testid="people-game-filter"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[var(--brand)]/50 sm:w-48"
+            className="rounded-xl border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground outline-none focus:border-[var(--brand)]/50 sm:w-48"
           >
             <option value="all">{t("people.allGames")}</option>
             {games.map((game) => (
@@ -90,10 +94,12 @@ export function PeopleDirectory({
 
         {blacklist.length > 0 ? (
           <div
-            className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+            className="mb-6 rounded-xl border border-border bg-card/80 p-3"
             data-testid="blacklist-panel"
           >
-            <p className="text-xs uppercase tracking-wide text-white/40">{t("people.blacklist")}</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {t("people.blacklist")}
+            </p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {blacklist.map((entry) => (
                 <li key={entry.personId}>
@@ -105,7 +111,7 @@ export function PeopleDirectory({
                       setBlacklist(next);
                       toast.success(t("toast.restored", { name: entry.name }));
                     }}
-                    className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 transition hover:border-white/25 hover:text-white"
+                    className="rounded-lg border border-border bg-secondary/60 px-2 py-1 text-xs text-foreground/80 transition hover:border-foreground/25 hover:text-foreground"
                   >
                     {entry.name} ×
                   </button>
@@ -124,23 +130,27 @@ export function PeopleDirectory({
                 data-testid={`person-${person.personId}`}
                 className={`rounded-2xl border p-4 transition ${
                   blocked
-                    ? "border-white/6 bg-white/[0.02] opacity-60"
-                    : "border-white/8 bg-white/[0.03] hover:border-white/16"
+                    ? "border-border/60 bg-secondary/20 opacity-60"
+                    : "border-border bg-card/70 hover:border-foreground/20"
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/people/${person.personId}`}
-                        className="text-base font-medium text-white hover:text-[var(--brand)]"
+                        className="text-base font-medium text-foreground hover:text-[var(--brand)]"
                       >
                         {person.name}
                       </Link>
                       {person.online ? (
-                        <span className="text-[11px] text-emerald-300">{t("people.online")}</span>
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-300">
+                          {t("people.online")}
+                        </span>
                       ) : (
-                        <span className="text-[11px] text-white/35">{t("people.offline")}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {t("people.offline")}
+                        </span>
                       )}
                       <ProfileLinks
                         steamProfileUrl={person.steamProfileUrl}
@@ -150,16 +160,18 @@ export function PeopleDirectory({
                         compact
                       />
                     </div>
-                    <p className="mt-1 text-sm text-white/50">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {person.gameIds.map(gameName).join(" · ")}
                       {person.region ? ` · ${t(`region.${person.region}`)}` : ""}
                     </p>
-                    <p className="mt-1 text-xs text-white/40">{person.roles.slice(0, 3).join(" · ")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground/80">
+                      {person.roles.slice(0, 3).join(" · ")}
+                    </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex shrink-0 gap-2">
                     <Link
                       href={`/people/${person.personId}`}
-                      className="inline-flex h-7 items-center rounded-lg border border-white/15 bg-white/5 px-2.5 text-[0.8rem] text-white/80 transition hover:border-white/30"
+                      className="inline-flex h-7 items-center rounded-lg border border-border bg-secondary/50 px-2.5 text-[0.8rem] text-foreground/80 transition hover:border-foreground/30"
                     >
                       {t("people.card")}
                     </Link>
@@ -180,7 +192,7 @@ export function PeopleDirectory({
         </ul>
 
         {filtered.length === 0 ? (
-          <p className="mt-10 text-sm text-white/50">{t("people.empty")}</p>
+          <p className="mt-10 text-sm text-muted-foreground">{t("people.empty")}</p>
         ) : null}
       </main>
     </SiteChrome>

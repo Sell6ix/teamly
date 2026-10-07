@@ -64,22 +64,22 @@ export function SiteChrome({
             : "border-border bg-background/75"
         } backdrop-blur-xl`}
       >
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href="/" className="group flex items-center gap-3">
-            <span className="font-display text-xl tracking-tight text-foreground sm:text-2xl">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+          <Link href="/" className="group min-w-0 shrink truncate">
+            <span className="font-display text-lg tracking-tight text-foreground sm:text-2xl">
               Teamly
             </span>
-            <span className="hidden text-xs text-muted-foreground sm:inline">
+            <span className="ml-3 hidden text-xs text-muted-foreground md:inline">
               {t("brand.tagline")}
             </span>
           </Link>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground sm:gap-2 sm:text-xs">
             <LocaleSwitch />
             <ThemeToggle />
             <Link
               href="/people"
               data-testid="nav-people"
-              className="rounded-md border border-border bg-secondary/60 px-2 py-1 text-foreground/80 transition hover:border-foreground/25 hover:text-foreground"
+              className="rounded-md border border-border bg-secondary/60 px-1.5 py-1 text-foreground/80 transition hover:border-foreground/25 hover:text-foreground sm:px-2"
             >
               {t("nav.people")}
             </Link>
@@ -89,7 +89,7 @@ export function SiteChrome({
                   type="button"
                   data-testid="open-profile"
                   onClick={() => setOpen(true)}
-                  className="rounded-md border border-border bg-secondary/60 px-2 py-1 text-foreground/80 transition hover:border-[var(--brand)]/40 hover:text-foreground"
+                  className="max-w-[7rem] truncate rounded-md border border-border bg-secondary/60 px-1.5 py-1 text-foreground/80 transition hover:border-[var(--brand)]/40 hover:text-foreground sm:max-w-[10rem] sm:px-2"
                 >
                   {label}
                 </button>
@@ -97,7 +97,7 @@ export function SiteChrome({
                   type="button"
                   data-testid="sign-out"
                   onClick={() => void signOut({ callbackUrl: "/" })}
-                  className="rounded-md border border-border bg-secondary/60 px-2 py-1 text-foreground/70 transition hover:text-foreground"
+                  className="rounded-md border border-border bg-secondary/60 px-1.5 py-1 text-foreground/70 transition hover:text-foreground sm:px-2"
                 >
                   {t("nav.logout")}
                 </button>
@@ -106,7 +106,7 @@ export function SiteChrome({
               <Link
                 href="/login"
                 data-testid="nav-login"
-                className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand)]/15 px-2 py-1 text-[var(--brand)] transition hover:bg-[var(--brand)]/25"
+                className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand)]/15 px-1.5 py-1 text-[var(--brand)] transition hover:bg-[var(--brand)]/25 sm:px-2"
               >
                 {t("nav.login")}
               </Link>

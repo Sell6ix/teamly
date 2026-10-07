@@ -20,7 +20,7 @@ export function ProfileLinks({
   if (!steam && !discord && !riot && !faceit) return null;
 
   const chip =
-    "inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-normal transition hover:border-white/25";
+    "inline-flex items-center gap-1 rounded-md border border-border bg-secondary/50 px-1.5 py-0.5 text-[11px] font-normal transition hover:border-foreground/25";
 
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${compact ? "" : "mt-0.5"}`}>

@@ -291,6 +291,8 @@ export function GameLobby({
 
   return (
     <SiteChrome subtle>
+      {/* Lobby is a dark game surface in both themes so white chip text stays readable. */}
+      <div className="dark flex min-h-0 flex-1 flex-col bg-[#0b0b0d] text-foreground">
       <div
         className="relative isolate overflow-hidden border-b border-white/8"
         style={{ ["--game-accent" as string]: game.accent }}
@@ -336,7 +338,7 @@ export function GameLobby({
         </div>
       </div>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-28 sm:px-6 lg:flex-row lg:items-start lg:pb-10">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-36 sm:px-6 lg:flex-row lg:items-start lg:pb-10">
         <section className="min-w-0 flex-1 space-y-5">
           <div className="sticky top-0 z-20 -mx-4 space-y-3 border-b border-white/6 bg-[#0b0b0d]/90 px-4 py-3 backdrop-blur-xl sm:-mx-0 sm:rounded-2xl sm:border sm:border-white/8 sm:px-4">
             <ChipRow label={t("lobby.filterStyle")}>
@@ -625,17 +627,18 @@ export function GameLobby({
 
         <PartyTray />
       </main>
+      </div>
     </SiteChrome>
   );
 }
 
 function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <span className="w-16 shrink-0 text-[11px] uppercase tracking-wider text-white/35">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+      <span className="w-[4.75rem] shrink-0 pt-1.5 text-[10px] font-medium uppercase leading-tight tracking-wide text-white/40 sm:w-24 sm:text-[11px]">
         {label}
       </span>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      <div className="flex min-w-0 flex-wrap gap-1.5">{children}</div>
     </div>
   );
 }
@@ -924,6 +927,7 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
 
   return (
     <SiteChrome>
+      <div className="dark flex flex-1 flex-col bg-[#0b0b0d] text-foreground">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
         <Link href={`/g/${party.gameId}`} className="text-xs text-white/50 hover:text-white/80">
           {t("deep.backLobby")}
@@ -959,6 +963,7 @@ export function PartyDeepLink({ party }: { party: OpenParty }) {
         </div>
         <PartyTray />
       </main>
+      </div>
     </SiteChrome>
   );
 }
@@ -985,6 +990,7 @@ export function JoinDeepLink({ code }: { code: string }) {
 
   return (
     <SiteChrome>
+      <div className="dark flex flex-1 flex-col bg-[#0b0b0d] text-foreground">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
         <Link href="/" className="text-xs text-white/50 hover:text-white/80">
           {t("lobby.catalogShort")}
@@ -1025,6 +1031,7 @@ export function JoinDeepLink({ code }: { code: string }) {
         </div>
         <PartyTray />
       </main>
+      </div>
     </SiteChrome>
   );
 }
