@@ -5,6 +5,7 @@ WORKDIR /app
 
 # better-sqlite3 is compiled with node-gyp
 FROM base AS deps
+ENV HUSKY=0
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
