@@ -1,5 +1,9 @@
 # Teamly
 
+**English:** Teamly is a browse-first web app for putting together game parties. Browse a catalog of games and lobbies, share a `/join` link, find people to play with and keep a block list. The UI is available in English and Russian with a light/dark theme. Built with Next.js, React, Auth.js (Discord OAuth plus a demo login), SQLite via Drizzle and an optional Discord bot (`/lfg`, `/party`, voice channels). Setup instructions below (in Russian): copy `.env.example` to `.env.local`, run `npm install`, then `npm run dev` and open <http://127.0.0.1:4317>.
+
+---
+
 Browse-first веб-приложение для сбора пати: каталог игр, лобби, шарящиеся `/join`, поиск людей, чёрный список. UI: **RU + EN** (переключатель в шапке, выбор в `localStorage`).
 
 Данные пати / looking / профили авторизованных пользователей живут в **SQLite**. Auth — **Auth.js** (Discord OAuth + демо-вход). Discord — **бот** (`npm run bot`) и/или webhook в профиле.
