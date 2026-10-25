@@ -24,7 +24,8 @@ ENV NODE_ENV=production \
     DATABASE_URL=file:/data/teamly.db
 COPY --from=build --chown=node:node /app /app
 RUN mkdir -p /data && chown node:node /data
-USER node
 VOLUME /data
 EXPOSE 3000
+# Platform volumes (e.g. Fly.io) are mounted root-owned: fix /data, then drop to the node user.
+ENTRYPOINT ["sh", "-c", "if [ \"$(id -u)\" = 0 ]; then chown -R node:node /data; set -- runuser -u node -- env HOME=/home/node \"$@\"; fi; exec \"$@\"", "--"]
 CMD ["npm", "start"]
