@@ -57,6 +57,12 @@ docker run -p 4317:3000 -v teamly-data:/data \
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и pull request выполняет `lint`, `test`, `build`, а затем проверяет сборку Docker-образа.
 
+### Коммиты и релизы
+
+Коммиты пишутся по [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `chore:` …), формат проверяет [commitlint](https://commitlint.js.org/): локально через husky-хук (`npm install` его подключает) и в pull request.
+
+После успешного CI на `main` [semantic-release](https://semantic-release.gitbook.io/) сам вычисляет версию по коммитам (`fix` — patch, `feat` — minor, `!` или `BREAKING CHANGE` — major), создаёт git-тег и GitHub Release с changelog. Коммиты `docs`, `chore`, `ci` и т. п. новый релиз не создают.
+
 ## Экраны
 
 - `/` — каталог (`/?type=party&q=…`)
