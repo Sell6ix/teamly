@@ -41,6 +41,22 @@ npm test
 npm run build
 ```
 
+### Docker
+
+```bash
+docker build -t teamly .
+docker run -p 4317:3000 -v teamly-data:/data \
+  -e AUTH_URL=http://localhost:4317 \
+  -e AUTH_SECRET="$(openssl rand -base64 32)" \
+  teamly
+```
+
+Образ собирается в несколько этапов (`better-sqlite3` компилируется через `node-gyp`), приложение слушает порт `3000`, а SQLite лежит в томе `/data`. Остальные переменные из таблицы выше передаются через `-e` или `--env-file`. По умолчанию в контейнере стартует только веб-приложение; Discord-бот (`npm run bot`) нужно запускать отдельно.
+
+### CI
+
+GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и pull request выполняет `lint`, `test`, `build`, а затем проверяет сборку Docker-образа.
+
 ## Экраны
 
 - `/` — каталог (`/?type=party&q=…`)
